@@ -17,12 +17,10 @@ python -c "import sys, struct, ssl; print('#' * 70); print('python:', sys.versio
 python -m pip install -U pip setuptools wheel
 python -m pip --version
 
-if [ "$CHECK_FORMATTING" = "1" ]; then
-    python -m pip install -r dev-requirements.txt
-    black --diff --check snekbot
-else
-    pip install -r requirements.txt
-    pytest -W error -r a --cov="snekbot" --cov-config=.coveragerc --verbose
+python -m pip install -r requirements.txt
 
-    bash <(curl -s https://codecov.io/bash) -n "${CODECOV_NAME}"
-fi
+black --diff --check snekbot
+
+pytest -W error -r a --cov="snekbot" --cov-config=.coveragerc --verbose
+
+bash <(curl -s https://codecov.io/bash) -n "${CODECOV_NAME}"
