@@ -1,0 +1,12 @@
+language: python
+sudo: false
+dist: xenial
+
+matrix:
+  include:
+    - python: 3.7
+      env: CHECK_FORMATTING=1
+    - python: 3.7
+
+script:
+  - ci.sh
