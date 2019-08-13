@@ -51,7 +51,7 @@ async def on_issue_comment_created(event, payload):
     else:
         print("that's not a PR")
     print(f"user: {payload.comment.user.login!r}")
-    print(f"body: {payload.comment.user.body!r}")
+    print(f"body: {payload.comment.body!r}")
 
 if __name__ == "__main__":
     print("WHEEE")
