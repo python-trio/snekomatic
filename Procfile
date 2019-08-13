@@ -1,1 +1,1 @@
-web: python3 -m snekbot
+web: python3 -u -m snekbot

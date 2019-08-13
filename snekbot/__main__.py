@@ -17,7 +17,7 @@ async def on_issue_opened(
 ):
     """Whenever an issue is opened, greet the author and say thanks."""
     github_api = RUNTIME_CONTEXT.app_installation_client
-    pprint.pprint(locals())
+    print(repr(locals()))
     logger.info(f"locals:\n  {pprint.pformat(locals())}")
 
     comments_api_url = issue["comments_url"]
@@ -30,6 +30,7 @@ async def on_issue_opened(
     await github_api.post(comments_api_url, data={"body": message})
 
 if __name__ == "__main__":
+    print("WHEEE")
     run_app(
         name='ancient-ocean-35232',
         version='1.0.0',
