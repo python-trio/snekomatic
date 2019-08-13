@@ -1,4 +1,7 @@
 import pprint
+import logging
+
+logger = logging.getLogger(__name__)
 
 from octomachinery.app.server.runner import run as run_app
 from octomachinery.app.routing import process_event_actions
@@ -15,6 +18,16 @@ async def on_issue_opened(
     """Whenever an issue is opened, greet the author and say thanks."""
     github_api = RUNTIME_CONTEXT.app_installation_client
     pprint.pprint(locals())
+    logger.info(f"locals:\n  {pprint.pformat(locals())}")
+
+    comments_api_url = issue["comments_url"]
+    author = issue["user"]["login"]
+
+    message = (
+        f"Thanks for the report @{author}! "
+        "I will look into it ASAP! (I'm a bot 🤖)."
+    )
+    await github_api.post(comments_api_url, data={"body": message})
 
 if __name__ == "__main__":
     run_app(
