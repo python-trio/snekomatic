@@ -17,8 +17,6 @@ async def on_issue_opened(
 ):
     """Whenever an issue is opened, greet the author and say thanks."""
     github_api = RUNTIME_CONTEXT.app_installation_client
-    print(repr(locals()))
-    logger.info(f"locals:\n  {pprint.pformat(locals())}")
 
     comments_api_url = issue["comments_url"]
     author = issue["user"]["login"]
@@ -28,6 +26,11 @@ async def on_issue_opened(
         "I will look into it ASAP! (I'm a bot 🤖)."
     )
     await github_api.post(comments_api_url, data={"body": message})
+
+@process_event_actions('issue_comment', {'created'})
+async def on_issue_comment_created(event):
+    print(event)
+    print(dir(event))
 
 if __name__ == "__main__":
     print("WHEEE")
