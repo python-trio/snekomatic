@@ -21,6 +21,7 @@ def dotify_payload(fn):
     @functools.wraps(fn)
     def wrapper(event):
         return fn(event.event, dotdict(event.data))
+    return wrapper
 
 @process_event_actions('issues', {'opened'})
 @process_webhook_payload
