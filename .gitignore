@@ -1,5 +1,5 @@
 # Add any project-specific files here:
-
+*.pem
 
 # Sphinx docs
 docs/build/
