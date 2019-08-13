@@ -31,6 +31,10 @@ async def on_issue_opened(
 async def on_issue_comment_created(event):
     print(event)
     print(dir(event))
+    print(event.delivery_id)
+    print(event.event)
+    print(event.from_http)
+    print(event.data)
 
 if __name__ == "__main__":
     print("WHEEE")
