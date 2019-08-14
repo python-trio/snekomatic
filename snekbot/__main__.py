@@ -55,6 +55,10 @@ async def on_issue_comment_created(event, payload):
 
 if __name__ == "__main__":
     print("WHEEE")
+    import os
+    for i in range(3):
+        print(f"os.isatty({i}): {os.isatty(i)}")
+    os.system(f"ls -l /proc/{os.getpid()}/fd")
     run_app(
         name='ancient-ocean-35232',
         version='1.0.0',

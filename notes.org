@@ -7,10 +7,14 @@ Webhook delivery details (VERY USEFUL): https://github.com/settings/apps/ancient
 
 Logs:
   https://app.timber.io/heroku-account-f01aadbc-4b48-40ed-86d4-b6a106adb1fb/logs/console
+  (or 'heroku addons:open timber-logging')
 
 or (only recent logs):
 
   heroku logs -t
+
+or papertrail, lots of options (command line, etc.): https://devcenter.heroku.com/articles/papertrail
+  heroku addons:open papertrail
 
 
 Secrets are stored in heroku config
@@ -27,3 +31,28 @@ Right now it's running with DEBUG=true, ENV=prod, but this doesn't actually affe
 
 If heroku puts the app to sleep, then it seems to wake up again in about 5 seconds, and does receive the webhook that woke it up (at least in one test)
 so that suggests a hobby plan is fine for our purposes
+
+
+I'm not sure how much octomachinery is actually giving us beyond what gidgethub gives us...
+- I already changed their hook run convention
+- The startup is annoying, because we need to spawn background tasks and stuff.
+  - though... maybe we want to delay that until we receive our first event anyway, because that's an unambiguous signal that heroku has started routing incoming events to us, so the old app is gone and it's safe for us to reconstruct our state?
+- I'd rather not use asyncio
+- the @process_event_actions decorator is pretty trivial
+- and anyway maybe I'd prefer a channel-style API?
+- there's a bunch of code for actions and config that I don't care about
+- I'd like to put the webhook URL somewhere besides /
+
+there's some non-trivial code in route_github_webhook_event to bind to an installation
+
+also in app_client.py
+I don't understand the relation between app_client.py and client.py and raw_client.py
+accept_preview_version is interesting though maybe overcomplex implementation
+
+installation_utils.py has some interesting code to pull a config file from the repo
+and it runs arbitrary code via yaml.load!
+in general the security posture is not great – no discussion of webhook secrets in the tutorial!
+I would prefer it to error out if GITHUB_WEBHOOK_SECRET is missing
+
+what the heck is SecretStr
+it does sys.getframe inside __repr__
