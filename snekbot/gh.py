@@ -12,6 +12,17 @@ from glom import glom
 import jwt
 import pendulum
 
+# Comparison to octomachinery:
+# - No support for Github Actions
+# - Supports both asyncio and trio
+# - Doesn't try to "own" the event loop or web server -> can be integrated
+#   into a larger web app
+# - More robust auth token handling (better clock handling; checks for
+#   expiration on each request rather than just when a new webhook arrives)
+# - Insists on webhook secret, since anything else is totally insecure
+# - No utility functions that call yaml.load and thus execute arbitrary code
+# - ~9x fewer lines of code
+
 # XX TODO: should we catch exceptions in webhook handlers, the same way flask
 # etc. catch exceptions in request handlers? right now the first exception
 # leaks out of dispatch_webhook and cancels the running of other handlers
@@ -214,7 +225,7 @@ class GithubApp:
         print("Got valid GH webhook with delivery id:", event.delivery_id)
         # Wait a bit to give Github's eventual consistency time to catch up
         await anyio.sleep(1)
-        installation_id = glom(event.data, "installation.install_id")
+        installation_id = glom(event.data, "installation.id")
         client = self.client_for(installation_id)
         for route in self._routes[event.event]:
             if _all_match(event.data, route.restrictions):
