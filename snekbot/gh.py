@@ -91,7 +91,7 @@ class AppGithubClient(BaseGithubClient):
     def __init__(self, app):
         self.app = app
         cache = SegmentedCacheOverlay(app._cache, None)
-        super().__init__(app._session, requestor=app.user_agent, cache=cache)
+        super().__init__(app._session, requester=app.user_agent, cache=cache)
 
     async def _make_request(self, *args, **kwargs):
         now = pendulum.now()
@@ -114,7 +114,7 @@ class InstallationGithubClient(BaseGithubClient):
         self.app = app
         self.installation_id = installation_id
         cache = SegmentedCacheOverlay(app._cache, installation_id)
-        super().__init__(app._session, requestor=app.user_agent, cache=cache)
+        super().__init__(app._session, requester=app.user_agent, cache=cache)
 
     async def _make_request(self, *args, **kwargs):
         token = await self.app._get_token(self.installation_id)
@@ -135,8 +135,8 @@ class CachedInstallationToken:
 
 @attr.s(frozen=True)
 class Route:
-    async_fn: attr.ib()
-    restrictions: attr.ib()
+    async_fn = attr.ib()
+    restrictions = attr.ib()
 
 
 class GithubApp:
@@ -161,10 +161,10 @@ class GithubApp:
         self._private_key = _env_fallback("private_key", private_key)
         self._webhook_secret = _env_fallback("webhook_secret", webhook_secret)
         self._installation_tokens = defaultdict(CachedInstallationToken)
-        self.app_client = AppGithubClient(self)
         # event_type -> [Route(...), Route(...), ...]
         self._routes = defaultdict(list)
         self._cache = cachetools.LRUCache(cache_size)
+        self.app_client = AppGithubClient(self)
 
     def client_for(self, installation_id):
         return InstallationGithubClient(self, installation_id)
@@ -203,7 +203,7 @@ class GithubApp:
             raise TypeError("At most one restriction is allowed (for now)")
         self._routes[event_type].append(Route(async_fn, restrictions))
 
-    def register(self, event_type, **restrictions):
+    def route(self, event_type, **restrictions):
         def decorator(async_fn):
             self.add(async_fn, event_type, **restrictions)
             return async_fn

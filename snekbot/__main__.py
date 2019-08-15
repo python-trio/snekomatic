@@ -65,7 +65,7 @@ async def main():
     port = os.environ.get("PORT", 8000)
     async with trio.open_nursery() as nursery:
         config = hypercorn.Config.from_mapping(
-            bind=["127.0.0.1:{port}"],
+            bind=[f"127.0.0.1:{port}"],
             # Log to stdout
             accesslog="-",
             errorlog="-",
