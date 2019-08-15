@@ -191,7 +191,7 @@ class GithubApp:
             else:
                 print(f"{installation_id}: Renewing now")
                 try:
-                    cit.refresh_event = anyio.Event()
+                    cit.refresh_event = anyio.create_event()
                     response = await self.app_client.post(
                         "/app/installations{/installation_id}/access_tokens",
                         url_vars={"installation_id": installation_id},
