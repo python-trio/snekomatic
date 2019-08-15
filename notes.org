@@ -87,3 +87,17 @@ https://flask.palletsprojects.com/en/1.1.x/api/#flask.Flask.make_response
 
 quart does impose a limit on body size and an automatic timeout when you call request.get_data
 (default is 16 MiB and 60 seconds)
+
+
+if I'm reading this right, then github rate limits are tracked separately for each installation: https://developer.github.com/apps/building-github-apps/understanding-rate-limits-for-github-apps/
+so you don't want to share rate_limit across the app
+but you do want to share it across all users of the same install
+
+
+
+trisnekion
+autosnek
+snekify
+snekamate
+robosnek
+trio-bot
