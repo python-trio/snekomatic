@@ -4,6 +4,7 @@ Test deployment: https://dashboard.heroku.com/apps/ancient-ocean-35232/
 
 App settings on github: https://github.com/settings/apps/ancient-ocean-35232
 Webhook delivery details (VERY USEFUL): https://github.com/settings/apps/ancient-ocean-35232/advanced
+(you can also redeliver individual notifications)
 
 Logs:
   https://app.timber.io/heroku-account-f01aadbc-4b48-40ed-86d4-b6a106adb1fb/logs/console

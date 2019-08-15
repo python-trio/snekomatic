@@ -138,7 +138,7 @@ class InstallationGithubClient(BaseGithubClient):
 class CachedInstallationToken:
     token = attr.ib(default="")
     # pendulum.DateTime
-    expires_at = attr.ib(default=pendulum.DateTime(1900, 1, 1))
+    expires_at = attr.ib(default=pendulum.datetime(1900, 1, 1))
     # if a refresh is already in progress, an anyio.Event
     # otherwise, None
     refresh_event = attr.ib(default=None)
