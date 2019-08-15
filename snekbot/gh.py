@@ -52,7 +52,7 @@ def _env_fallback(name, passed):
     return os.environ[envvar_name]
 
 def _all_match(data, restrictions):
-    for key, value in restrictions:
+    for key, value in restrictions.items():
         if key not in data or data["key"] != value:
             return False
     return True
