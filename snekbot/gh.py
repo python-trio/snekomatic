@@ -88,7 +88,7 @@ class SegmentedCacheOverlay:
 
 
 class AppGithubClient(BaseGithubClient):
-    def __init__(self, *, app):
+    def __init__(self, app):
         self.app = app
         cache = SegmentedCacheOverlay(app._cache, None)
         super().__init__(app._session, requestor=app.user_agent, cache=cache)
@@ -110,7 +110,7 @@ class AppGithubClient(BaseGithubClient):
 
 
 class InstallationGithubClient(BaseGithubClient):
-    def __init__(self, *, app, installation_id):
+    def __init__(self, app, installation_id):
         self.app = app
         self.installation_id = installation_id
         cache = SegmentedCacheOverlay(app._cache, installation_id)
