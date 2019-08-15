@@ -1,8 +1,10 @@
 from collections import defaultdict
+import os
+from typing import Mapping, Tuple
 
 import anyio
 import asks
-import attrs
+import attr
 import cachetools
 from gidgethub.sansio import Event, accept_format
 import gidgethub.abc
@@ -46,7 +48,7 @@ def _all_match(data, restrictions):
 
 
 # This should maybe move into gidgethub
-class BaseGithubClient(gidgethub.abc.GithubAPI):
+class BaseGithubClient(gidgethub.abc.GitHubAPI):
     def __init__(self, session, *args, **kwargs):
         self._session = session
         super().__init__(*args, **kwargs)
