@@ -229,8 +229,8 @@ class GithubApp:
         client = self.client_for(installation_id)
         for route in self._routes[event.event]:
             if _all_match(event.data, route.restrictions):
-                print(f"Routing to {async_fn!r}")
-                await async_fn(client, event.event, event.data)
+                print(f"Routing to {route.async_fn!r}")
+                await route.async_fn(client, event.event, event.data)
         try:
             limit = client.rate_limit.remaining
         except AttributeError:
