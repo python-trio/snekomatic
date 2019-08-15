@@ -26,6 +26,10 @@ I added a remote by doing:
   git remote add heroku https://git.heroku.com/ancient-ocean-35232.git
 I'm not planning to use this remote ever because I have heroku's github integration set up to auto-deploy whenever I push to master. But by having it, the heroku CLI tool can automatically figure out which app I want without having to specify it all the time
 
+TODO: add caching! subtlety: for safety I guess it probably needs to be by-install-id?
+so maybe wrap LRUCache in a mapping wrapper that adds/removes the install_id to the cache key
+
+
 Right now it's running with DEBUG=true, ENV=prod, but this doesn't actually affect much inside octomachinery – AFAICT it just sets some config variables, and sets some default logging levels to DEBUG
 
 
@@ -56,3 +60,30 @@ I would prefer it to error out if GITHUB_WEBHOOK_SECRET is missing
 
 what the heck is SecretStr
 it does sys.getframe inside __repr__
+
+
+bedevere source has a nice simple example of dispatch
+
+to see how homu creates merge commits, search its main.py for create_merge
+
+
+to mess around with stuff locally:
+#+BEGIN_SRC shell
+heroku config -s > .env
+virtualenv -p /usr/bin/python3.7 t
+t/bin/pip install -r requirements.txt
+(source t/bin/activate && heroku local)
+#+END_SRC
+(limited use of course b/c there's no way to get github hooks like this)
+
+
+
+quart docs:
+https://pgjones.gitlab.io/quart/
+request object:
+https://flask.palletsprojects.com/en/1.1.x/api/#incoming-request-data
+legal return values from a view function:
+https://flask.palletsprojects.com/en/1.1.x/api/#flask.Flask.make_response
+
+quart does impose a limit on body size and an automatic timeout when you call request.get_data
+(default is 16 MiB and 60 seconds)

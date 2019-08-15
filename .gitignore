@@ -1,5 +1,6 @@
 # Add any project-specific files here:
 *.pem
+.env
 
 # Sphinx docs
 docs/build/

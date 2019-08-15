@@ -1,3 +1,10 @@
-pytest
 black
-octomachinery
+trio
+gidgethub
+pyjwt[crypto]
+hypercorn
+quart-trio
+asks
+sentry-sdk
+pendulum
+glom
