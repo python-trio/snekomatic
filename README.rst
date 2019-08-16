@@ -149,9 +149,11 @@ complexity inside a library.
 
 The way I'm approaching it for now, is that you create a ``GithubApp``
 object representing the app as a whole. Its ``.app_client`` attribute
-is a Github client object that uses the app account; or, you can use
-``.client_for(installation_id)`` to get a client object that uses the
-token for that installation id. And when a webhook is received, we
-automatically give the handler an appropriate client object, so
-usually you don't have to think about this stuff at all, just use that
-client and it'll do the right thing. See ``gh.py`` for more details.
+is a Github client object that uses the app account; but usually, what
+you want to do is use ``.client_for(installation_id)`` to get a client
+object that uses the token for that installation id. These clients all
+automatically handle token renewal, caching, etc., behind the scenes.
+And when a webhook is received, we automatically give the handler an
+appropriate client object, so in fact you usually don't have to think
+about this stuff at all, just use that client and it'll do the right
+thing. See ``gh.py`` for more details.
