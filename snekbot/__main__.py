@@ -1,8 +1,4 @@
-# Make sure that print's are flushed immediately so heroku's logging
-# infrastructure can see them.
 import sys
-sys.stdout.reconfigure(line_buffering=True)
-
 import os
 import trio
 from glom import glom
@@ -58,7 +54,12 @@ async def on_issue_opened(event_type, payload, gh_client):
     await gh_client.post(comments_api_url, data={"body": message})
 
 async def main():
-    print("Starting up!")
+    # Make sure that print's are flushed immediately so heroku's logging
+    # infrastructure can see them.
+    sys.stdout.reconfigure(line_buffering=True)
+
+    print("~~~ Starting up! ~~~")
+
     # On Heroku, have to bind to whatever $PORT says:
     # https://devcenter.heroku.com/articles/dynos#local-environment-variables
     port = os.environ.get("PORT", 8000)
