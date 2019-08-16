@@ -238,7 +238,7 @@ class GithubApp:
         cit = self._installation_tokens[installation_id]
 
         while _too_close_for_comfort(cit.expires_at):
-            print(f"{installation_id}: Token is expired or will be soon")
+            print(f"{installation_id}: Token is uncached or expired or will expire soon")
             if cit.refresh_event is not None:
                 print(
                     f"{installation_id}: Renewal already in progress; waiting"
