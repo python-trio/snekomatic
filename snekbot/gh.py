@@ -193,7 +193,7 @@ class GithubApp:
                 cit.refresh_event = anyio.create_event()
                 try:
                     response = await self.app_client.post(
-                        "/app/installations{/installation_id}/access_tokens",
+                        "/app/installations/{installation_id}/access_tokens",
                         url_vars={"installation_id": installation_id},
                         accept=accept_format(version="machine-man-preview"),
                         data={},
