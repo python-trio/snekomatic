@@ -126,7 +126,7 @@ async def _member_status(gh_client, org, member):
         else:
             raise
     else:
-        return glom(response, "status")
+        return glom(response, "state")
 
 
 # There's no "merged" event; instead you get action=closed + merged=True
