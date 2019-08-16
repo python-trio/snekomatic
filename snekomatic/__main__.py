@@ -78,18 +78,18 @@ class PersistentStringSet:
             cursor.execute(
                 f"""
                 SELECT exists
-                   (SELECT 1 FROM {self._table_name} WHERE entry = %s)
+                   (SELECT 1 FROM {self._table_name} WHERE entry = %s);
                 """,
                 (value,),
             )
-
+            return cursor.fetchone()
 
     def add(self, value):
         with self._conn() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 f"""
-                INSERT INTO {self._table_name} (entry) VALUES (%s)
+                INSERT INTO {self._table_name} (entry) VALUES (%s);
                 """,
                 (value,),
             )
@@ -221,9 +221,9 @@ async def main():
     # Check if the set works at all
     import secrets
     fake_name = secrets.token_hex(5)
-    print(f"fake_name in set: {fake_name in SENT_INVITATION}")
+    print(f"{fake_name} in set: {fake_name in SENT_INVITATION}")
     SENT_INVITATION.add(fake_name)
-    print(f"fake_name in set: {fake_name in SENT_INVITATION}")
+    print(f"{fake_name} in set: {fake_name in SENT_INVITATION}")
 
     # On Heroku, have to bind to whatever $PORT says:
     # https://devcenter.heroku.com/articles/dynos#local-environment-variables
