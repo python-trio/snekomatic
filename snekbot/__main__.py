@@ -47,7 +47,7 @@ async def webhook_github():
     return ""
 
 @github_app.route("issues", action="opened")
-async def on_issue_opened(event_type, payload, client):
+async def on_issue_opened(event_type, payload, gh_client):
     print("New issue was created")
     comments_api_url = glom(payload, "issue.comments_url")
     author = glom(payload, "issue.user.login")
