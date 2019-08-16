@@ -118,7 +118,7 @@ async def _member_status(gh_client, org, member):
     try:
         response = await gh_client.getitem(
             "/orgs/{org}/memberships/{username}",
-            url_vars={"org": org, "username": creator},
+            url_vars={"org": org, "username": member},
         )
     except gidgethub.BadRequest as exc:
         if exc.status_code == 404:
