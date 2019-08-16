@@ -82,9 +82,8 @@ class PersistentStringSet:
                 """,
                 (value,),
             )
-            got = cursor.fetchone()
-            print(got)
-            return got[0]
+            (exists,) = cursor.fetchone()
+            return exists
 
     def add(self, value):
         with self._conn() as conn:
