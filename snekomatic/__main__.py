@@ -15,6 +15,31 @@ from .gh import GithubApp
 # we should stash the delivery id in a contextvar and include it in logging
 # also maybe structlog? eh print is so handy for now
 
+# Maybe:
+# send message on first PR, with basic background info – volunteer project,
+# super appreciate their contribution, also means we're sometimes slow.
+# how to ping?
+#
+# send message with invitation giving info
+#
+# after they accept, post a closed issue to welcome them, and invite them to
+# ask any questions and introduce themselves there? and also highlight it in
+# the chat? (include link to search for their contributions, as part of the
+# introduction?)
+#
+# in the future would be nice if bot could do some pings, both ways
+#
+# include some specific suggestions on how to get help? assign a mentor from a
+# list of volunteers?
+#
+# I almost wonder if it would be better to give membership on like, the 3rd
+# merged PR
+# with the bot keeping track, and posting an encouraging countdown on each
+# merged PR, so it feels more like an incremental process, where you can see
+# the milestone coming and then when you get there it *is* a milestone.
+#
+# link [humble Python script] to the bot's source repo :-)
+
 quart_app = QuartTrio(__name__)
 github_app = GithubApp()
 
@@ -43,17 +68,6 @@ async def webhook_github():
     await github_app.dispatch_webhook(request.headers, body)
     return ""
 
-
-# dedent, remove single newlines (but not double-newlines), remove
-# leading/trailing whitespace (around the whole message)
-def _fix_markdown(s):
-    import textwrap
-    s = s.strip()
-    s = textwrap.dedent(s)
-    s = s.replace("\n\n", "__PARAGRAPH_BREAK__")
-    s = s.replace("\n", " ")
-    s = s.replace("__PARAGRAPH_BREAK__", "\n\n")
-    return s
 
 class PersistentStringSet:
     def __init__(self, name):
@@ -100,25 +114,20 @@ class PersistentStringSet:
 SENT_INVITATION = PersistentStringSet("SENT_INVITATION")
 
 
-# send message on first PR, with basic background info – volunteer project,
-# super appreciate their contribution, also means we're sometimes slow.
-# how to ping?
-#
-# send message with invitation giving info
-#
-# after they accept, post a closed issue to welcome them, and invite them to
-# ask any questions and introduce themselves there? and also highlight it in
-# the chat? (include link to search for their contributions, as part of the
-# introduction?)
-#
-# in the future would be nice if bot could do some pings, both ways
-#
-# include some specific suggestions on how to get help? assign a mentor from a
-# list of volunteers?
+# dedent, remove single newlines (but not double-newlines), remove
+# leading/trailing newlines
+def _fix_markdown(s):
+    import textwrap
+    s = s.strip("\n")
+    s = textwrap.dedent(s)
+    s = s.replace("\n\n", "__PARAGRAPH_BREAK__")
+    s = s.replace("\n", " ")
+    s = s.replace("__PARAGRAPH_BREAK__", "\n\n")
+    return s
+
 
 invite_message = _fix_markdown(
     """
-
     Hey @{username}, it looks like that was the first time we merged one of
     your PRs! Thanks so much! :tada: :birthday:
 
