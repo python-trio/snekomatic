@@ -32,7 +32,8 @@ webhook, then use one of these:
 This should probably be split off into its own library eventually...
 
 Interesting facts about this code, compared to octomachinery:
-* No support for Github Actions
+
+* We don't have any support for Github Actions
 * This code should work with any of trio/asyncio/curio
 * Doesn't try to "own" the event loop or web server -> can be integrated
   into a larger web app
@@ -42,6 +43,9 @@ Interesting facts about this code, compared to octomachinery:
 * Insists on using webhook secret, since anything else is totally insecure
 * No utility functions that call yaml.load and thus execute arbitrary code
 * Almost 10x simpler (as measured by lines-of-code)
+
+Many thanks to Sviat for octomachinery though, because I would never have
+figured out how to do any of this stuff without studying his code.
 
 """
 
