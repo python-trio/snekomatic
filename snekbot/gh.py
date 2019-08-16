@@ -80,8 +80,10 @@ __all__ = ["GithubApp"]
 # request, or vice-versa.
 MAX_CLOCK_SKEW = pendulum.Duration(minutes=1)
 
+
 def _too_close_for_comfort(expires_at):
     return pendulum.now() + MAX_CLOCK_SKEW > expires_at
+
 
 def _env_fallback(name, passed):
     if passed is not None:
@@ -92,6 +94,7 @@ def _env_fallback(name, passed):
             f"you must either pass {name} or set {envvar_name}"
         )
     return os.environ[envvar_name]
+
 
 def _all_match(data, restrictions):
     for key, value in restrictions.items():
@@ -107,11 +110,11 @@ class BaseGithubClient(gidgethub.abc.GitHubAPI):
         super().__init__(*args, **kwargs)
 
     async def _request(
-            self,
-            method: str,
-            url: str,
-            headers: Mapping[str, str],
-            body: bytes = b''
+        self,
+        method: str,
+        url: str,
+        headers: Mapping[str, str],
+        body: bytes = b"",
     ) -> Tuple[int, Mapping[str, str], bytes]:
         response = await self._session.request(
             method, url, headers=headers, data=body
@@ -195,15 +198,15 @@ class Route:
 
 class GithubApp:
     def __init__(
-            self,
-            *,
-            session=None,
-            app_id=None,
-            user_agent=None,
-            private_key=None,
-            webhook_secret=None,
-            # XX Completely untuned; maybe this is too big, or too small.
-            cache_size=500,
+        self,
+        *,
+        session=None,
+        app_id=None,
+        user_agent=None,
+        private_key=None,
+        webhook_secret=None,
+        # XX Completely untuned; maybe this is too big, or too small.
+        cache_size=500,
     ):
         if session is None:
             # We don't really need to limit simultaneous connections... we're
@@ -229,7 +232,9 @@ class GithubApp:
         while _too_close_for_comfort(cit.expires_at):
             print(f"{installation_id}: Token is expired or will be soon")
             if cit.refresh_event is not None:
-                print(f"{installation_id}: Renewal already in progress; waiting")
+                print(
+                    f"{installation_id}: Renewal already in progress; waiting"
+                )
                 await cit.refresh_event.wait()
             else:
                 print(f"{installation_id}: Renewing now")
@@ -262,6 +267,7 @@ class GithubApp:
         def decorator(async_fn):
             self.add(async_fn, event_type, **restrictions)
             return async_fn
+
         return decorator
 
     async def dispatch_webhook(self, headers, body):

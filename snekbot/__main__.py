@@ -18,6 +18,7 @@ github_app = GithubApp()
 
 if "SENTRY_DSN" in os.environ:
     import sentry_sdk
+
     sentry_sdk.init(os.environ["SENTRY_DSN"])
 
     @quart.got_request_exception.connect
@@ -28,19 +29,23 @@ if "SENTRY_DSN" in os.environ:
         else:
             print(f"NOT logging error to sentry: {exception!r}")
 
+
 @quart_app.route("/")
 async def index():
     return "Hi! 🐍🐍🐍"
 
+
 @quart_app.route("/oops")
 async def oops():
     raise RuntimeError("roh uh")
+
 
 @quart_app.route("/webhook/github", methods=["POST"])
 async def webhook_github():
     body = await request.get_data()
     await github_app.dispatch_webhook(request.headers, body)
     return ""
+
 
 @github_app.route("issues", action="opened")
 async def on_issue_opened(event_type, payload, gh_client):
@@ -52,6 +57,7 @@ async def on_issue_opened(event_type, payload, gh_client):
         "I will look into it ASAP! (I'm a bot 🤖)."
     )
     await gh_client.post(comments_api_url, data={"body": message})
+
 
 async def main():
     # Make sure that print's are flushed immediately so heroku's logging
@@ -74,5 +80,6 @@ async def main():
         )
         url = await nursery.start(hypercorn.trio.serve, quart_app, config)
         print("Accepting HTTP requests at:", url)
+
 
 trio.run(main)

@@ -14,6 +14,7 @@ from octomachinery.app.routing import process_event_actions
 from octomachinery.app.routing.decorators import process_webhook_payload
 from octomachinery.app.runtime.context import RUNTIME_CONTEXT
 
+
 class dotdict(dict):
     def __getattr__(self, name):
         value = self[name]
@@ -22,18 +23,26 @@ class dotdict(dict):
         else:
             return value
 
+
 def dotify_payload(fn):
     @functools.wraps(fn)
     def wrapper(event):
         return fn(event.event, dotdict(event.data))
+
     return wrapper
 
-@process_event_actions('issues', {'opened'})
+
+@process_event_actions("issues", {"opened"})
 @process_webhook_payload
 async def on_issue_opened(
-        *,
-        action, issue, repository, sender, installation,
-        assignee=None, changes=None,
+    *,
+    action,
+    issue,
+    repository,
+    sender,
+    installation,
+    assignee=None,
+    changes=None,
 ):
     """Whenever an issue is opened, greet the author and say thanks."""
     github_api = RUNTIME_CONTEXT.app_installation_client
@@ -47,7 +56,8 @@ async def on_issue_opened(
     )
     await github_api.post(comments_api_url, data={"body": message})
 
-@process_event_actions('issue_comment', {'created'})
+
+@process_event_actions("issue_comment", {"created"})
 @dotify_payload
 async def on_issue_comment_created(event, payload):
     print(f"got a comment on {payload.issue.html_url}")
@@ -58,9 +68,10 @@ async def on_issue_comment_created(event, payload):
     print(f"user: {payload.comment.user.login!r}")
     print(f"body: {payload.comment.body!r}")
 
+
 if __name__ == "__main__":
     run_app(
-        name='ancient-ocean-35232',
-        version='1.0.0',
-        url='https://github.com/apps/ancient-ocean-35232',
+        name="ancient-ocean-35232",
+        version="1.0.0",
+        url="https://github.com/apps/ancient-ocean-35232",
     )
