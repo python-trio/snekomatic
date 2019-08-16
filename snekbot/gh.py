@@ -1,45 +1,49 @@
-# A simple abstraction for writing Github Apps.
-#
-# Basic setup:
-#
-#   gh_app = GithubApp(...secrets and stuff...)
-#
-#   @gh_app.route("issue", action="created")
-#   @gh_app.route("pull_request", action="created")
-#   async def handler(event_type, payload, client):
-#       assert event_type in ["issue", "pull_request"]
-#       assert payload["action"] == "created"
-#       # 'client' is a gidgethub-style github API client that automatically
-#       # uses the right credentials for this webhook event.
-#
-# Integrate into webapp:
-#
-#   @quart_app.route("/webhook/github", methods=["POST"])
-#   async def handler():
-#       headers = request.headers
-#       body = await request.get_body()
-#       await gh_app.dispatch_webhook(headers, body)
-#       return ""
-#
-# If you want to make API requests spontaneously, not in response to a
-# webhook, then use one of these:
-#
-#   client = gh_app.app_client
-#   client = gh_app.client_for(installation_id)
-#
-# This should probably be split off into its own library eventually...
-#
-# Interesting facts about this code, compared to octomachinery:
-# * No support for Github Actions
-# * This code should work with any of trio/asyncio/curio
-# * Doesn't try to "own" the event loop or web server -> can be integrated
-#   into a larger web app
-# * More robust auth token handling (better clock handling; checks for
-#   expiration before each request rather than just when a new webhook
-#   arrives)
-# * Insists on using webhook secret, since anything else is totally insecure
-# * No utility functions that call yaml.load and thus execute arbitrary code
-# * Almost 10x simpler (as measured by lines-of-code)
+"""
+
+A simple abstraction for writing Github Apps.
+
+Basic setup:
+
+  gh_app = GithubApp(...secrets and stuff...)
+
+  @gh_app.route("issue", action="created")
+  @gh_app.route("pull_request", action="created")
+  async def handler(event_type, payload, gh_client):
+      assert event_type in ["issue", "pull_request"]
+      assert payload["action"] == "created"
+      # 'gh_client' is a gidgethub-style github API client that automatically
+      # uses the right credentials for this webhook event.
+
+Integrate into webapp:
+
+  @quart_app.route("/webhook/github", methods=["POST"])
+  async def handler():
+      headers = request.headers
+      body = await request.get_body()
+      await gh_app.dispatch_webhook(headers, body)
+      return ""
+
+If you want to make API requests spontaneously, not in response to a
+webhook, then use one of these:
+
+  client = gh_app.app_client
+  client = gh_app.client_for(installation_id)
+
+This should probably be split off into its own library eventually...
+
+Interesting facts about this code, compared to octomachinery:
+* No support for Github Actions
+* This code should work with any of trio/asyncio/curio
+* Doesn't try to "own" the event loop or web server -> can be integrated
+  into a larger web app
+* More robust auth token handling (better clock handling; checks for
+  expiration before each request rather than just when a new webhook
+  arrives)
+* Insists on using webhook secret, since anything else is totally insecure
+* No utility functions that call yaml.load and thus execute arbitrary code
+* Almost 10x simpler (as measured by lines-of-code)
+
+"""
 
 from collections import defaultdict
 import os
@@ -54,6 +58,8 @@ import gidgethub.abc
 from glom import glom
 import jwt
 import pendulum
+
+__all__ = ["GithubApp"]
 
 # XX TODO: should we catch exceptions in webhook handlers, the same way flask
 # etc. catch exceptions in request handlers? right now the first exception
