@@ -6,7 +6,6 @@ sys.stdout.reconfigure(line_buffering=True)
 import os
 import trio
 from glom import glom
-import asks
 import hypercorn
 import hypercorn.trio
 import quart
