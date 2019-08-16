@@ -55,7 +55,7 @@ def _fix_markdown(s):
     s = s.replace("__PARAGRAPH_BREAK__", "\n\n")
     return s
 
-def PersistentStringSet:
+class PersistentStringSet:
     def __init__(self, name):
         self._table_name = f"persistent_set_{name}"
 
