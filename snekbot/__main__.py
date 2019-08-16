@@ -10,7 +10,7 @@ import asks
 import hypercorn
 import hypercorn.trio
 import quart
-from quart import request, g
+from quart import request
 from quart_trio import QuartTrio
 
 from .gh import GithubApp
@@ -48,7 +48,7 @@ async def webhook_github():
     return ""
 
 @github_app.route("issues", action="opened")
-async def on_issue_opened(gh_client, event_type, payload):
+async def on_issue_opened(event_type, payload, client):
     print("New issue was created")
     comments_api_url = glom(payload, "issue.comments_url")
     author = glom(payload, "issue.user.login")
