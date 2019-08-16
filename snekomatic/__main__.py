@@ -13,7 +13,7 @@ from .gh import GithubApp
 # we should stash the delivery id in a contextvar and include it in logging
 # also maybe structlog? eh print is so handy for now
 
-quart_app = QuartTrio("snekbot")
+quart_app = QuartTrio(__name__)
 github_app = GithubApp()
 
 if "SENTRY_DSN" in os.environ:

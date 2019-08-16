@@ -102,3 +102,4 @@ snekify
 snekamate
 robosnek
 trio-bot
+snekomatic
