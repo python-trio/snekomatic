@@ -147,8 +147,8 @@ So to summarize, each Github App has:
 It's pretty complicated, but fortunately, we can hide most of the
 complexity inside a library.
 
-The way I'm approaching it for now, is that you create a ``GithubApp`
-object representing the app as a whole. It's ``.app_client`` attribute
+The way I'm approaching it for now, is that you create a ``GithubApp``
+object representing the app as a whole. Its ``.app_client`` attribute
 is a Github client object that uses the app account; or, you can use
 ``.client_for(installation_id)`` to get a client object that uses the
 token for that installation id. And when a webhook is received, we
