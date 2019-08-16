@@ -275,10 +275,13 @@ class GithubApp:
 
     async def dispatch_webhook(self, headers, body):
         event = Event.from_http(headers, body, secret=self._webhook_secret)
-        print("Got valid GH webhook with delivery id:", event.delivery_id)
+        print(f"GH webhook received: type={event.event}, delivery id={event.delivery_id}")
         # Wait a bit to give Github's eventual consistency time to catch up
         await anyio.sleep(1)
-        installation_id = glom(event.data, "installation.id")
+        installation_id = glom(event.data, "installation.id", default=None)
+        if installation_id is None:
+            print("No associated installation; not dispatching")
+            return
         client = self.client_for(installation_id)
         for route in self._routes[event.event]:
             if _all_match(event.data, route.restrictions):

@@ -157,3 +157,11 @@ And when a webhook is received, we automatically give the handler an
 appropriate client object, so in fact you usually don't have to think
 about this stuff at all, just use that client and it'll do the right
 thing. See ``gh.py`` for more details.
+
+
+Why "snekomatic"?
+=================
+
+My avatar is a `triskelion
+<https://en.wikipedia.org/wiki/Triskelion>`__ made of snakes – a
+trisnekion. I dunno, it seemed to fit?
