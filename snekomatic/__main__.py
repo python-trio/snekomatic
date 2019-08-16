@@ -191,22 +191,19 @@ async def pull_request_merged(event_type, payload, gh_client):
         return
 
     state = await _member_state(gh_client, org, creator)
-    # XX uncomment before going live!
-    # if state is not None:
-    #     print(f"They already have member state {state}; not inviting")
-    #     return
+    if state is not None:
+        print(f"They already have member state {state}; not inviting")
+        return
 
-    print("Inviting!")
+    print("Inviting! Woohoo!")
     # Send an invitation
     await gh_client.put(
         "/orgs/{org}/memberships/{username}",
         url_vars={"org": org, "username": creator},
         data={"role": "member"},
     )
-
     # Record that we did
     SENT_INVITATION.add(creator)
-
     # Welcome them
     await gh_client.post(
         glom(payload, "pull_request.comments_url"),
@@ -220,6 +217,13 @@ async def main():
     sys.stdout.reconfigure(line_buffering=True)
 
     print("~~~ Starting up! ~~~")
+
+    # Check if the set works at all
+    import secrets
+    fake_name = secrets.token_hex(5)
+    print(f"fake_name in set: {fake_name in SENT_INVITATION}")
+    SENT_INVITATION.add(fake_name)
+    print(f"fake_name in set: {fake_name in SENT_INVITATION}")
 
     # On Heroku, have to bind to whatever $PORT says:
     # https://devcenter.heroku.com/articles/dynos#local-environment-variables
