@@ -149,7 +149,10 @@ class SegmentedCacheOverlay:
 class AppGithubClient(BaseGithubClient):
     def __init__(self, app):
         self.app = app
-        cache = SegmentedCacheOverlay(app._cache, None)
+        # Temporarily disabled because of:
+        #   https://github.com/theelous3/asks/issues/133
+        #cache = SegmentedCacheOverlay(app._cache, None)
+        cache = None
         super().__init__(app._session, requester=app.user_agent, cache=cache)
 
     async def _make_request(self, *args, **kwargs):
@@ -173,7 +176,10 @@ class InstallationGithubClient(BaseGithubClient):
     def __init__(self, app, installation_id):
         self.app = app
         self.installation_id = installation_id
-        cache = SegmentedCacheOverlay(app._cache, installation_id)
+        # Temporarily disabled because of:
+        #   https://github.com/theelous3/asks/issues/133
+        #cache = SegmentedCacheOverlay(app._cache, installation_id)
+        cache = None
         super().__init__(app._session, requester=app.user_agent, cache=cache)
 
     async def _make_request(self, *args, **kwargs):
