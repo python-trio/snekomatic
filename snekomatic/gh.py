@@ -47,6 +47,9 @@ Interesting facts about this code, compared to octomachinery:
 Many thanks to Sviat for octomachinery though, because I would never have
 figured out how to do any of this stuff without studying his code.
 
+Also thanks to Brett for gidgethub, which is doing most of the heavy lifting
+here.
+
 """
 
 from collections import defaultdict
