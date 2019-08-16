@@ -190,7 +190,7 @@ async def pull_request_merged(event_type, payload, gh_client):
         print("The database says we already sent an invitation")
         return
 
-    state = await _member_status(gh_client, org, creator)
+    state = await _member_state(gh_client, org, creator)
     # XX uncomment before going live!
     # if state is not None:
     #     print(f"They already have member state {state}; not inviting")
