@@ -7,6 +7,7 @@ import hypercorn.trio
 import quart
 from quart import request
 from quart_trio import QuartTrio
+import gidgethub
 
 from .gh import GithubApp
 
@@ -110,6 +111,24 @@ invite_message = _fix_markdown(
     """
 )
 
+async def _member_status(gh_client, org, member):
+    # Returns "active" (they're a member), "pending" (they're not a member,
+    # but they have an invitation they haven't responded to yet), or None
+    # (they're not a member and don't have a pending invitation)
+    try:
+        response = await gh_client.getitem(
+            "/orgs/{org}/memberships/{username}",
+            url_vars={"org": org, "username": creator},
+        )
+    except gidgethub.BadRequest as exc:
+        if exc.status_code == 404:
+            return None
+        else:
+            raise
+    else:
+        return glom(response, "status")
+
+
 # There's no "merged" event; instead you get action=closed + merged=True
 @github_app.route("pull_request", action="closed")
 async def pull_request_merged(event_type, payload, gh_client):
@@ -117,31 +136,19 @@ async def pull_request_merged(event_type, payload, gh_client):
     if not glom(payload, "pull_request.merged"):
         print("but not merged, so never mind")
         return
-    creator_login = glom(payload, "pull_request.user.login")
-    org = glom(payload, "repository.owner.login")
-    print(f"PR by {creator_login} was merged!")
+    creator = glom(payload, "pull_request.user.login")
+    merger = glom(payload, "pull_request.merged_by.login")
+    org = glom(payload, "organization.login")
+    print(f"PR by {creator} was merged by {merger}!")
 
-    print("Here's what their membership looks like:")
-    current_status = await gh_client.getitem(
-        "/orgs/{org}/memberships/{username}",
-        url_vars={"org": org, "username": creator_login},
-    )
-    import pprint
-    pprint.pprint(current_status)
-
-    print("Here's someone else:")
-    current_status = await gh_client.getitem(
-        "/orgs/{org}/memberships/{username}",
-        url_vars={"org": org, "username": "foo"},
-    )
-    import pprint
-    pprint.pprint(current_status)
+    print(await _member_status(gh_client, org, creator))
+    print(await _member_status(gh_client, org, "foo"))
 
     if False:
         # Send an invitation
         await gh_client.put(
             "/orgs/{org}/memberships/{username}",
-            url_vars={"org": org, "username": creator_login},
+            url_vars={"org": org, "username": creator},
             data={"role": "member"},
         )
 
