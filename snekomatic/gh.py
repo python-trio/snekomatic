@@ -1,6 +1,4 @@
-"""
-
-A simple abstraction for writing Github Apps.
+"""A simple abstraction for writing Github Apps.
 
 Basic setup:
 
@@ -31,7 +29,7 @@ webhook, then use one of these:
 
 This should probably be split off into its own library eventually...
 
-Interesting facts about this code, compared to octomachinery:
+Some notes on how this compares to octomachinery, which has overlapping goals:
 
 * We don't have any support for Github Actions
 * This code should work with any of trio/asyncio/curio
@@ -40,9 +38,10 @@ Interesting facts about this code, compared to octomachinery:
 * More robust auth token handling (better clock handling; checks for
   expiration before each request rather than just when a new webhook
   arrives)
-* Insists on using webhook secret, since anything else is totally insecure
+* We insist that you configure a webhook secret, since anything else is
+  totally insecure
 * No utility functions that call yaml.load and thus execute arbitrary code
-* Almost 10x simpler (as measured by lines-of-code)
+* About 10x fewer lines-of-code
 
 Many thanks to Sviat for octomachinery though, because I would never have
 figured out how to do any of this stuff without studying his code.
