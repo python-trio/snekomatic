@@ -122,7 +122,7 @@ async def pull_request_merged(event_type, payload, gh_client):
     print(f"PR by {creator_login} was merged!")
 
     print("Here's what their membership looks like:")
-    current_status = await gh_client.get(
+    current_status = await gh_client.getitem(
         "/orgs/{org}/memberships/{username}",
         url_vars={"org": org, "username": creator_login},
     )
@@ -130,7 +130,7 @@ async def pull_request_merged(event_type, payload, gh_client):
     pprint.pprint(current_status)
 
     print("Here's someone else:")
-    current_status = await gh_client.get(
+    current_status = await gh_client.getitem(
         "/orgs/{org}/memberships/{username}",
         url_vars={"org": org, "username": "foo"},
     )
