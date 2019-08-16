@@ -11,3 +11,4 @@ cachetools
 sentry-sdk
 black
 anyio
+psycopg2-binary  # sigh

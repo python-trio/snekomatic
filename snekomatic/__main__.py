@@ -8,6 +8,7 @@ import quart
 from quart import request
 from quart_trio import QuartTrio
 import gidgethub
+import psycopg2
 
 from .gh import GithubApp
 
@@ -54,6 +55,50 @@ def _fix_markdown(s):
     s = s.replace("__PARAGRAPH_BREAK__", "\n\n")
     return s
 
+def PersistentStringSet:
+    def __init__(self, name):
+        self._table_name = f"persistent_set_{name}"
+
+    def _conn(self):
+        conn = psycopg2.connect(os.environ["DATABASE_URL"], sslmode="require")
+        cursor = conn.cursor()
+        cursor.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {self._table_name} (
+                entry  text PRIMARY KEY
+            );
+            """
+        )
+        conn.commit()
+        return conn
+
+    def __contains__(self, value):
+        with self._conn() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                f"""
+                SELECT exists
+                   (SELECT 1 FROM {self._table_name} WHERE entry = %s)
+                """,
+                (value,),
+            )
+
+
+    def add(self, value):
+        with self._conn() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                f"""
+                INSERT INTO {self._table_name} (entry) VALUES (%s)
+                """,
+                (value,),
+            )
+            conn.commit()
+
+
+SENT_INVITATION = PersistentStringSet("SENT_INVITATION")
+
+
 # send message on first PR, with basic background info – volunteer project,
 # super appreciate their contribution, also means we're sometimes slow.
 # how to ping?
@@ -72,12 +117,13 @@ def _fix_markdown(s):
 
 invite_message = _fix_markdown(
     """
-    Hey, it looks like that was the first time we merged one of your PRs!
-    Thanks so much! :tada: :birthday:
+
+    Hey @{username}, it looks like that was the first time we merged one of
+    your PRs! Thanks so much! :tada: :birthday:
 
     If you want to keep contributing, we'd love to have you. So, I just sent
-    you an invitation to join the python-trio org! If you accept, then here's
-    what will happen:
+    you an invitation to join the python-trio organization on Github! If you
+    accept, then here's what will happen:
 
     * Github will automatically subscribe you to notifications on all our
       repositories. (But you can unsubscribe again if you don't want the
@@ -99,19 +145,18 @@ invite_message = _fix_markdown(
     If you decline, then you can still submit PRs, but I won't hassle you
     again. And if you ever change your mind, just let us know, and we'll send
     another invitation. Or, you can ignore the invitation entirely, and it'll
-    still be there for you later. Basically, you should do whatever's best for
-    you!
+    still be there for you later. You should do whatever's best for you!
 
     If you have any questions, well... I am just a humble Python script, so I
     probably can't help. But feel free to post a comment here, or [in our
     chat](https://gitter.im/python-trio/general), or [on our
-    forum](https://trio.discourse.group/c/help-and-advice), and someone will
-    help you out!
+    forum](https://trio.discourse.group/c/help-and-advice), whatever's
+    easiest, and someone will help you out!
 
     """
 )
 
-async def _member_status(gh_client, org, member):
+async def _member_state(gh_client, org, member):
     # Returns "active" (they're a member), "pending" (they're not a member,
     # but they have an invitation they haven't responded to yet), or None
     # (they're not a member and don't have a pending invitation)
@@ -141,16 +186,32 @@ async def pull_request_merged(event_type, payload, gh_client):
     org = glom(payload, "organization.login")
     print(f"PR by {creator} was merged by {merger}!")
 
-    print(await _member_status(gh_client, org, creator))
-    print(await _member_status(gh_client, org, "foo"))
+    if creator in SENT_INVITATION:
+        print("The database says we already sent an invitation")
+        return
 
-    if False:
-        # Send an invitation
-        await gh_client.put(
-            "/orgs/{org}/memberships/{username}",
-            url_vars={"org": org, "username": creator},
-            data={"role": "member"},
-        )
+    state = await _member_status(gh_client, org, creator)
+    # XX uncomment before going live!
+    # if state is not None:
+    #     print(f"They already have member state {state}; not inviting")
+    #     return
+
+    print("Inviting!")
+    # Send an invitation
+    await gh_client.put(
+        "/orgs/{org}/memberships/{username}",
+        url_vars={"org": org, "username": creator},
+        data={"role": "member"},
+    )
+
+    # Record that we did
+    SENT_INVITATION.add(creator)
+
+    # Welcome them
+    await gh_client.post(
+        glom(payload, "pull_request.comments_url"),
+        data={"body": invite_message.format(username=creator)},
+    )
 
 
 async def main():
