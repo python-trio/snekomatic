@@ -17,7 +17,6 @@ or (only recent logs):
 or papertrail, lots of options (command line, etc.): https://devcenter.heroku.com/articles/papertrail
   heroku addons:open papertrail
 
-
 Secrets are stored in heroku config
 Can see/modify from heroku dashboard, or
   heroku config

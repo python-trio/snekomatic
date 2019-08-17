@@ -12,6 +12,12 @@ import psycopg2
 
 from .gh import GithubApp
 
+# MAJOR TODO:
+# - tests
+# - now that we have state, figure out how to handle backups
+#   https://devcenter.heroku.com/articles/heroku-postgres-backups
+#   I enabled automatic backups, so we at least have a week of daily backups
+
 # we should stash the delivery id in a contextvar and include it in logging
 # also maybe structlog? eh print is so handy for now
 
