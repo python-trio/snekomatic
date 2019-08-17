@@ -1,7 +1,9 @@
+import os
 import hmac
 import json
 import secrets
 import asks
+from contextlib import contextmanager
 
 # Partial duplicate of gidgethub.sansio.validate_event
 def sign_webhook(body: bytes, secret: str):
@@ -19,3 +21,13 @@ def fake_webhook(event_type, payload, secret):
         "x-hub-signature": sign_webhook(body, secret),
     }
     return headers, body
+
+
+@contextmanager
+def save_environ():
+    saved_env = dict(os.environ)
+    try:
+        yield
+    finally:
+        os.environ.clear()
+        os.environ.update(saved_env)
