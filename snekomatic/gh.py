@@ -91,15 +91,21 @@ def _too_close_for_comfort(expires_at):
     return pendulum.now() + MAX_CLOCK_SKEW > expires_at
 
 
-def _env_fallback(name, passed):
-    if passed is not None:
-        return passed
-    envvar_name = f"GITHUB_{name.upper()}"
-    if envvar_name not in os.environ:
+def _lazy_env_fallback(name):
+    def getter(self):
+        attr_name = f"_{name}"
+        value = getattr(self, attr_name, None)
+        if value is not None:
+            return value
+        envvar_name = f"GITHUB_{name.upper()}"
+        if envvar_name in os.environ:
+            return os.environ[envvar_name]
         raise RuntimeError(
             f"you must either pass {name} or set {envvar_name}"
         )
-    return os.environ[envvar_name]
+
+    getter.__name__ = name
+    return property(getter)
 
 
 def _all_match(data, restrictions):
@@ -166,7 +172,7 @@ class AppGithubClient(BaseGithubClient):
                 "exp": (now + MAX_CLOCK_SKEW).int_timestamp,
                 "iss": self.app.app_id,
             },
-            key=self.app._private_key,
+            key=self.app.private_key,
             algorithm="RS256",
         )
         jwt_app_token = jwt_app_token.decode("ascii")
@@ -225,15 +231,23 @@ class GithubApp:
             # not going to overwhelm github's frontend servers.
             session = asks.Session(connections=100)
         self._session = session
-        self.app_id = _env_fallback("app_id", app_id)
-        self.user_agent = _env_fallback("user_agent", user_agent)
-        self._private_key = _env_fallback("private_key", private_key)
-        self._webhook_secret = _env_fallback("webhook_secret", webhook_secret)
+        self._user_agent = user_agent
+        self._app_id = app_id
+        self._private_key = private_key
+        self._webhook_secret = webhook_secret
         self._installation_tokens = defaultdict(CachedInstallationToken)
         # event_type -> [Route(...), Route(...), ...]
         self._routes = defaultdict(list)
         self._cache = cachetools.LRUCache(cache_size)
-        self.app_client = AppGithubClient(self)
+
+    user_agent = _lazy_env_fallback("user_agent")
+    app_id = _lazy_env_fallback("app_id")
+    private_key = _lazy_env_fallback("private_key")
+    webhook_secret = _lazy_env_fallback("webhook_secret")
+
+    @property
+    def app_client(self):
+        return AppGithubClient(self)
 
     def client_for(self, installation_id):
         return InstallationGithubClient(self, installation_id)
@@ -283,7 +297,7 @@ class GithubApp:
         return decorator
 
     async def dispatch_webhook(self, headers, body):
-        event = Event.from_http(headers, body, secret=self._webhook_secret)
+        event = Event.from_http(headers, body, secret=self.webhook_secret)
         print(f"GH webhook received: type={event.event}, delivery id={event.delivery_id}")
         # Wait a bit to give Github's eventual consistency time to catch up
         await anyio.sleep(1)
