@@ -152,9 +152,8 @@ async def pull_request_merged(event_type, payload, gh_client):
         print("but not merged, so never mind")
         return
     creator = glom(payload, "pull_request.user.login")
-    merger = glom(payload, "pull_request.merged_by.login")
     org = glom(payload, "organization.login")
-    print(f"PR by {creator} was merged by {merger}!")
+    print(f"PR by {creator} was merged!")
 
     if creator in SENT_INVITATION:
         print("The database says we already sent an invitation")
@@ -162,6 +161,9 @@ async def pull_request_merged(event_type, payload, gh_client):
 
     state = await _member_state(gh_client, org, creator)
     if state is not None:
+        # Remember for later so we don't keep checking the Github API over and
+        # over.
+        SENT_INVITATION.add(creator)
         print(f"They already have member state {state}; not inviting")
         return
 

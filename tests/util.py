@@ -18,8 +18,9 @@ def fake_webhook(event_type, payload, secret):
         "x-github-event": event_type,
         "content-type": "application/json",
         "x-github-delivery": secrets.token_hex(16),
-        "x-hub-signature": sign_webhook(body, secret),
     }
+    if secret is not None:
+        headers["x-hub-signature"] = sign_webhook(body, secret)
     return headers, body
 
 

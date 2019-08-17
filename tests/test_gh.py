@@ -85,7 +85,7 @@ async def test_client_part_of_app():
     assert len(set(tokens)) == 1
 
 
-def test_app_init_envvar_fallback():
+def test_app_envvar_fallback():
     with save_environ():
         os.environ["GITHUB_USER_AGENT"] = TEST_USER_AGENT
         os.environ["GITHUB_APP_ID"] = TEST_APP_ID
@@ -95,11 +95,8 @@ def test_app_init_envvar_fallback():
         app = GithubApp()
         assert app.app_id == TEST_APP_ID
         assert app.user_agent == TEST_USER_AGENT
-        assert app._private_key == TEST_PRIVATE_KEY
-        assert app._webhook_secret == TEST_WEBHOOK_SECRET
-
-    with pytest.raises(RuntimeError):
-        GithubApp()
+        assert app.private_key == TEST_PRIVATE_KEY
+        assert app.webhook_secret == TEST_WEBHOOK_SECRET
 
 
 async def test_github_app_webhook_routing(autojump_clock):
@@ -209,6 +206,22 @@ async def test_github_app_webhook_routing(autojump_clock):
 
     ################################################################
 
+    # Missing secret
+    with pytest.raises(gidgethub.ValidationFailure):
+        await app.dispatch_webhook(
+            *fake_webhook(
+                "pull_request",
+                {"action": "created", "installation": {"id": "xyzzy"}},
+                secret=None,
+            )
+        )
+
+    assert not record
+
+    record.clear()
+
+    ################################################################
+
     # No installation id
     await app.dispatch_webhook(
         *fake_webhook("ping", {}, secret=TEST_WEBHOOK_SECRET)
@@ -219,7 +232,7 @@ async def test_github_app_webhook_routing(autojump_clock):
     record.clear()
 
 
-async def test_github_app_webhook_client_works(autojump_clock):
+async def test_github_app_webhook_client_works():
     app = GithubApp(
         user_agent=TEST_USER_AGENT,
         app_id=TEST_APP_ID,
