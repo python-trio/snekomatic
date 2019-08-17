@@ -80,7 +80,7 @@ class PersistentStringSet:
         self._table_name = f"persistent_set_{name}"
 
     def _conn(self):
-        conn = psycopg2.connect(os.environ["DATABASE_URL"], sslmode="require")
+        conn = psycopg2.connect(os.environ["DATABASE_URL"])
         cursor = conn.cursor()
         cursor.execute(
             f"""
