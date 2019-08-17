@@ -143,6 +143,9 @@ def test_app_init_envvar_fallback():
         os.environ.clear()
         os.environ.update(saved_env)
 
+    with pytest.raises(RuntimeError):
+        GithubApp()
+
 
 async def test_github_app_webhook_routing(autojump_clock):
     app = GithubApp(
@@ -253,3 +256,46 @@ async def test_github_app_webhook_routing(autojump_clock):
     assert not record
 
     record.clear()
+
+    ################################################################
+
+    # No installation id
+    await app.dispatch_webhook(*fake_webhook(
+        "ping",
+        {},
+        secret=TEST_WEBHOOK_SECRET,
+    ))
+
+    assert not record
+
+    record.clear()
+
+
+async def test_github_app_webhook_client_works(autojump_clock):
+    app = GithubApp(
+        user_agent=TEST_USER_AGENT,
+        app_id=TEST_APP_ID,
+        private_key=TEST_PRIVATE_KEY,
+        webhook_secret=TEST_WEBHOOK_SECRET,
+    )
+
+    handler_ran = False
+
+    @app.route("pull_request")
+    async def handler(event_type, payload, client):
+        nonlocal handler_ran
+        handler_ran = True
+        assert "rate" in await client.getitem("/rate_limit")
+
+    await app.dispatch_webhook(*fake_webhook(
+        "pull_request",
+        {
+            "action": "created",
+            "installation": {
+                "id": TEST_INSTALLATION_ID,
+            },
+        },
+        secret=TEST_WEBHOOK_SECRET,
+    ))
+
+    assert handler_ran
