@@ -1,12 +1,12 @@
-# pick a port (or just 0?)
-# start an instance of the app on that port
-# - check that we can GET / to make sure quart/hypercorn part is working
+# TODO:
 # - send it a webhook and observe what it does...
 #   for this, should fake out github client api with canned responses
 #   and make assertions about what they do
 #   - in database
 #   - not in database, but in member list
 #   - not in either -> sends invitation!
+
+# easiest way is probably to monkeypatch BaseGithubClient._request
 
 import pytest
 import os
@@ -23,6 +23,8 @@ async def our_app_url(nursery, heroku_style_pg):
         os.environ["GITHUB_APP_ID"] = TEST_APP_ID
         os.environ["GITHUB_PRIVATE_KEY"] = TEST_PRIVATE_KEY
         os.environ["GITHUB_WEBHOOK_SECRET"] = TEST_WEBHOOK_SECRET
+        os.environ["PORT"] = "0"  # let the OS pick an unused port
+
         urls = await nursery.start(main)
         yield urls[0]
 
