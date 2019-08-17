@@ -27,6 +27,10 @@ webhook, then use one of these:
   client = gh_app.app_client
   client = gh_app.client_for(installation_id)
 
+You can also get an installation token with 'await gh_app.token_for(...)',
+which is useful in case you want to run git commands directly using those
+credentials.
+
 This should probably be split off into its own library eventually...
 
 Some notes on how this compares to octomachinery, which has overlapping goals:
@@ -182,7 +186,7 @@ class InstallationGithubClient(BaseGithubClient):
         super().__init__(app._session, requester=app.user_agent, cache=cache)
 
     async def _make_request(self, *args, **kwargs):
-        token = await self.app._get_token(self.installation_id)
+        token = await self.app.token_for(self.installation_id)
         kwargs["oauth_token"] = token
         kwargs["jwt"] = None
         return await super()._make_request(*args, **kwargs)
@@ -234,7 +238,7 @@ class GithubApp:
     def client_for(self, installation_id):
         return InstallationGithubClient(self, installation_id)
 
-    async def _get_token(self, installation_id):
+    async def token_for(self, installation_id):
         cit = self._installation_tokens[installation_id]
 
         while _too_close_for_comfort(cit.expires_at):
