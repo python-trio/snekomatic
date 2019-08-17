@@ -17,7 +17,7 @@ python -c "import sys, struct, ssl; print('#' * 70); print('python:', sys.versio
 python -m pip install -U pip setuptools wheel
 python -m pip --version
 
-python -m pip install -r requirements.txt
+python -m pip install -r test-requirements.txt
 
 #black --diff --check snekomatic
 
