@@ -21,6 +21,6 @@ python -m pip install -r test-requirements.txt
 
 #black --diff --check snekomatic
 
-pytest -W error -r a --cov="snekbot" --cov-config=.coveragerc --verbose
+pytest -W error -r a --verbose
 
 bash <(curl -s https://codecov.io/bash) -n "${CODECOV_NAME}"
