@@ -1,6 +1,7 @@
 import os
 import psycopg2
 
+
 class PersistentStringSet:
     def __init__(self, name):
         self._table_name = f"persistent_set_{name}"

@@ -16,6 +16,7 @@ from pytest_trio.enable_trio_mode import *
 
 BASE_DATABASE_URL = "postgresql://postgres@localhost"
 
+
 @pytest.fixture
 def heroku_style_pg():
     test_db_name = "".join(
@@ -39,6 +40,6 @@ def heroku_style_pg():
                 FROM pg_stat_activity
                 WHERE datname = %s;
                 """,
-                (test_db_name,)
+                (test_db_name,),
             )
             cur.execute(f"DROP DATABASE {test_db_name};")

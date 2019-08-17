@@ -160,7 +160,7 @@ class AppGithubClient(BaseGithubClient):
         self.app = app
         # Temporarily disabled because of:
         #   https://github.com/theelous3/asks/issues/133
-        #cache = SegmentedCacheOverlay(app._cache, None)
+        # cache = SegmentedCacheOverlay(app._cache, None)
         cache = None
         super().__init__(app._session, requester=app.user_agent, cache=cache)
 
@@ -187,7 +187,7 @@ class InstallationGithubClient(BaseGithubClient):
         self.installation_id = installation_id
         # Temporarily disabled because of:
         #   https://github.com/theelous3/asks/issues/133
-        #cache = SegmentedCacheOverlay(app._cache, installation_id)
+        # cache = SegmentedCacheOverlay(app._cache, installation_id)
         cache = None
         super().__init__(app._session, requester=app.user_agent, cache=cache)
 
@@ -256,7 +256,9 @@ class GithubApp:
         cit = self._installation_tokens[installation_id]
 
         while _too_close_for_comfort(cit.expires_at):
-            print(f"{installation_id}: Token is uncached or expired or will expire soon")
+            print(
+                f"{installation_id}: Token is uncached or expired or will expire soon"
+            )
             if cit.refresh_event is not None:
                 print(
                     f"{installation_id}: Renewal already in progress; waiting"
@@ -298,7 +300,9 @@ class GithubApp:
 
     async def dispatch_webhook(self, headers, body):
         event = Event.from_http(headers, body, secret=self.webhook_secret)
-        print(f"GH webhook received: type={event.event}, delivery id={event.delivery_id}")
+        print(
+            f"GH webhook received: type={event.event}, delivery id={event.delivery_id}"
+        )
         # Wait a bit to give Github's eventual consistency time to catch up
         await anyio.sleep(1)
         installation_id = glom(event.data, "installation.id", default=None)

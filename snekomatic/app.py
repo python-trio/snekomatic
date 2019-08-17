@@ -74,6 +74,7 @@ SENT_INVITATION = PersistentStringSet("SENT_INVITATION")
 # leading/trailing newlines
 def _fix_markdown(s):
     import textwrap
+
     s = s.strip("\n")
     s = textwrap.dedent(s)
     s = s.replace("\n\n", "__PARAGRAPH_BREAK__")
@@ -123,6 +124,7 @@ invite_message = _fix_markdown(
 
     """
 )
+
 
 async def _member_state(gh_client, org, member):
     # Returns "active" (they're a member), "pending" (they're not a member,

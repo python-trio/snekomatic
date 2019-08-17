@@ -19,6 +19,7 @@ async def test_basic_gh_client():
         data = await gh.getitem("/rate_limit")
         assert "rate" in data
 
+
 # Some end-to-end tests for the full app's client functionality
 async def test_client_part_of_app():
     app = GithubApp(
@@ -34,8 +35,7 @@ async def test_client_part_of_app():
     # endpoint, because app credentials are so locked down. But we can look up
     # information about ourself!
     data = await app.app_client.getitem(
-        "/app",
-        accept=accept_format(version="machine-man-preview"),
+        "/app", accept=accept_format(version="machine-man-preview")
     )
     assert glom(data, "name") == "snekomatic-test"
 
@@ -126,22 +126,23 @@ async def test_github_app_webhook_routing(autojump_clock):
     app.add(issue_created, "issue", action="created")
 
     with pytest.raises(TypeError):
+
         @app.route("pull_request", action="created", user="njsmith")
         async def unnused(event_type, payload, client):  # pragma: no cover
             pass
 
     ################################################################
 
-    await app.dispatch_webhook(*fake_webhook(
-        "pull_request",
-        {
-            "action": "created",
-            "installation": {
-                "id": TEST_INSTALLATION_ID,
+    await app.dispatch_webhook(
+        *fake_webhook(
+            "pull_request",
+            {
+                "action": "created",
+                "installation": {"id": TEST_INSTALLATION_ID},
             },
-        },
-        secret=TEST_WEBHOOK_SECRET,
-    ))
+            secret=TEST_WEBHOOK_SECRET,
+        )
+    )
 
     assert set(r[0] for r in record) == {
         "pull_request_all",
@@ -156,19 +157,18 @@ async def test_github_app_webhook_routing(autojump_clock):
 
     ################################################################
 
-    await app.dispatch_webhook(*fake_webhook(
-        "issue",
-        {
-            "action": "created",
-            "installation": {
-                "id": "xyzzy",
-            },
-        },
-        secret=TEST_WEBHOOK_SECRET,
-    ))
+    await app.dispatch_webhook(
+        *fake_webhook(
+            "issue",
+            {"action": "created", "installation": {"id": "xyzzy"}},
+            secret=TEST_WEBHOOK_SECRET,
+        )
+    )
 
     assert len(record) == 1
-    receiver, received_event_type, received_payload, received_client = record[0]
+    receiver, received_event_type, received_payload, received_client = record[
+        0
+    ]
     assert receiver == "issue_created"
     assert received_event_type == "issue"
     assert received_client.installation_id == "xyzzy"
@@ -178,15 +178,13 @@ async def test_github_app_webhook_routing(autojump_clock):
     ################################################################
 
     # No action= field
-    await app.dispatch_webhook(*fake_webhook(
-        "pull_request",
-        {
-            "installation": {
-                "id": "xyzzy",
-            },
-        },
-        secret=TEST_WEBHOOK_SECRET,
-    ))
+    await app.dispatch_webhook(
+        *fake_webhook(
+            "pull_request",
+            {"installation": {"id": "xyzzy"}},
+            secret=TEST_WEBHOOK_SECRET,
+        )
+    )
 
     assert len(record) == 1
     assert record[0][0] == "pull_request_all"
@@ -197,16 +195,13 @@ async def test_github_app_webhook_routing(autojump_clock):
 
     # Wrong secret
     with pytest.raises(gidgethub.ValidationFailure):
-        await app.dispatch_webhook(*fake_webhook(
-            "pull_request",
-            {
-                "action": "created",
-                "installation": {
-                    "id": "xyzzy",
-                },
-            },
-            secret="trust me",
-        ))
+        await app.dispatch_webhook(
+            *fake_webhook(
+                "pull_request",
+                {"action": "created", "installation": {"id": "xyzzy"}},
+                secret="trust me",
+            )
+        )
 
     assert not record
 
@@ -215,11 +210,9 @@ async def test_github_app_webhook_routing(autojump_clock):
     ################################################################
 
     # No installation id
-    await app.dispatch_webhook(*fake_webhook(
-        "ping",
-        {},
-        secret=TEST_WEBHOOK_SECRET,
-    ))
+    await app.dispatch_webhook(
+        *fake_webhook("ping", {}, secret=TEST_WEBHOOK_SECRET)
+    )
 
     assert not record
 
@@ -242,15 +235,15 @@ async def test_github_app_webhook_client_works(autojump_clock):
         handler_ran = True
         assert "rate" in await client.getitem("/rate_limit")
 
-    await app.dispatch_webhook(*fake_webhook(
-        "pull_request",
-        {
-            "action": "created",
-            "installation": {
-                "id": TEST_INSTALLATION_ID,
+    await app.dispatch_webhook(
+        *fake_webhook(
+            "pull_request",
+            {
+                "action": "created",
+                "installation": {"id": TEST_INSTALLATION_ID},
             },
-        },
-        secret=TEST_WEBHOOK_SECRET,
-    ))
+            secret=TEST_WEBHOOK_SECRET,
+        )
+    )
 
     assert handler_ran

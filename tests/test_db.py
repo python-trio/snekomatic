@@ -1,5 +1,6 @@
 from snekomatic.db import PersistentStringSet
 
+
 def test_persistent_string_set(heroku_style_pg):
     s1 = PersistentStringSet("s1")
     s2 = PersistentStringSet("s2")

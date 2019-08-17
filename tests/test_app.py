@@ -16,6 +16,7 @@ from snekomatic.app import main
 from .util import fake_webhook, save_environ
 from .credentials import *
 
+
 @pytest.fixture
 async def our_app_url(nursery, heroku_style_pg):
     with save_environ():
@@ -27,6 +28,7 @@ async def our_app_url(nursery, heroku_style_pg):
 
         urls = await nursery.start(main)
         yield urls[0]
+
 
 async def test_main_smoke(our_app_url):
     response = await asks.get(our_app_url)
