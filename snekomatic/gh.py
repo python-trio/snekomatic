@@ -213,8 +213,8 @@ class GithubApp:
         self,
         *,
         session=None,
-        app_id=None,
         user_agent=None,
+        app_id=None,
         private_key=None,
         webhook_secret=None,
         # XX Completely untuned; maybe this is too big, or too small.

@@ -10,13 +10,11 @@ from quart_trio import QuartTrio
 import gidgethub
 import psycopg2
 
+from .db import PersistentStringSet
 from .gh import GithubApp
 
 # MAJOR TODO:
 # - tests
-# - now that we have state, figure out how to handle backups
-#   https://devcenter.heroku.com/articles/heroku-postgres-backups
-#   I enabled automatic backups, so we at least have a week of daily backups
 
 # we should stash the delivery id in a contextvar and include it in logging
 # also maybe structlog? eh print is so handy for now
@@ -75,48 +73,6 @@ async def webhook_github():
     return ""
 
 
-class PersistentStringSet:
-    def __init__(self, name):
-        self._table_name = f"persistent_set_{name}"
-
-    def _conn(self):
-        conn = psycopg2.connect(os.environ["DATABASE_URL"])
-        cursor = conn.cursor()
-        cursor.execute(
-            f"""
-            CREATE TABLE IF NOT EXISTS {self._table_name} (
-                entry  text PRIMARY KEY
-            );
-            """
-        )
-        conn.commit()
-        return conn
-
-    def __contains__(self, value):
-        with self._conn() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                f"""
-                SELECT exists
-                   (SELECT 1 FROM {self._table_name} WHERE entry = %s);
-                """,
-                (value,),
-            )
-            (exists,) = cursor.fetchone()
-            return exists
-
-    def add(self, value):
-        with self._conn() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                f"""
-                INSERT INTO {self._table_name} (entry) VALUES (%s);
-                """,
-                (value,),
-            )
-            conn.commit()
-
-
 SENT_INVITATION = PersistentStringSet("SENT_INVITATION")
 
 
@@ -149,22 +105,24 @@ invite_message = _fix_markdown(
 
     * You'll be able to review and merge other people's pull requests
 
-    * You'll get a [member] badge next to your name when posting here, and
-      you'll have the option of adding your name to our [member's
-      page](https://github.com/orgs/python-trio/people) and putting our icon
-      on your Github profile
+    * You'll get a [member] badge next to your name when participating in the
+      Trio repos, and you'll have the option of adding your name to our
+      [member's page](https://github.com/orgs/python-trio/people) and putting
+      our icon on your Github profile
       ([details](https://help.github.com/en/articles/publicizing-or-hiding-organization-membership))
 
     If you want to read more, [here's the relevant section in our contributing
     guide](https://trio.readthedocs.io/en/latest/contributing.html#joining-the-team).
 
-    If you decline, then you can still submit PRs, but I won't hassle you
-    again. And if you ever change your mind, just let us know, and we'll send
-    another invitation. Or, you can ignore the invitation entirely, and it'll
-    still be there for you later. You should do whatever's best for you!
+    Alternatively, you're free to decline or ignore the invitation. You'll
+    still be able to contribute as much or as little as you like, and I won't
+    hassle you about joining again. But if you ever change your mind, just let
+    us know and we'll send another invitation. We'd love to have you, but more
+    importantly we want you to do whatever's best for you.
 
-    If you have any questions, well... I am just a humble Python script, so I
-    probably can't help. But feel free to post a comment here, or [in our
+    If you have any questions, well... I am just a [humble Python
+    script](https://github.com/python-trio/snekomatic), so I probably can't
+    help. But please do post a comment here, or [in our
     chat](https://gitter.im/python-trio/general), or [on our
     forum](https://trio.discourse.group/c/help-and-advice), whatever's
     easiest, and someone will help you out!
@@ -233,13 +191,6 @@ async def main():
     sys.stdout.reconfigure(line_buffering=True)
 
     print("~~~ Starting up! ~~~")
-
-    # Check if the set works at all
-    import secrets
-    fake_name = secrets.token_hex(5)
-    print(f"{fake_name} in set: {fake_name in SENT_INVITATION}")
-    SENT_INVITATION.add(fake_name)
-    print(f"{fake_name} in set: {fake_name in SENT_INVITATION}")
 
     # On Heroku, have to bind to whatever $PORT says:
     # https://devcenter.heroku.com/articles/dynos#local-environment-variables

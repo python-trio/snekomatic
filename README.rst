@@ -1,9 +1,40 @@
-🐍🐍🐍
-=====
-
-messing around with github apps in trio
+🐍🐍🐍🤖
+========
 
 License: Your choice of MIT or Apache License 2.0
+
+This is the code behind trio-bot, a Trio-powered github bot for
+helping us maintain the python-trio projects.
+
+
+Features
+========
+
+Right now the main feature is to invite folks to join the org after
+their first PR is merged. There are also lots of new features we could
+add – for more ideas see:
+
+* https://github.com/python-trio/trio/issues/220
+* https://github.com/python-trio/trio/issues/1187
+
+There's also a nice generic library for writing Github Apps hidden in
+the ``gh.py`` file – possibly it should get migrated into its own
+project at some point.
+
+
+Repo setup and permissions
+==========================
+
+The bot runs on Heroku, and is automatically re-deployed every time a
+commit lands in the ``master`` branch.
+
+The production deployment has access to powerful credentials –
+basically equivalent to an organization administrator. For example, if
+the bot became evil, it could kick us all out and take over the
+project for itself. So this repo is a bit more locked down than most
+of our repos: the code is public and anyone can submit PRs, but branch
+protection is set to that only python-trio admins can actually merge
+PRs into master.
 
 
 What the heck is a "Github App"?
@@ -144,6 +175,11 @@ So to summarize, each Github App has:
 - A master "app account" that your bot can use to access all those
   virtual accounts
 
+And what if you want to make a simple little private bot just for your
+project? Then during the "creation" phase you tick an extra checkbox
+that makes it so that only you're allowed "install" the app, and
+no-one else can. Everything else is exactly the same.
+
 It's pretty complicated, but fortunately, we can hide most of the
 complexity inside a library.
 
@@ -162,6 +198,10 @@ thing. See ``gh.py`` for more details.
 Why "snekomatic"?
 =================
 
-My avatar is a `triskelion
-<https://en.wikipedia.org/wiki/Triskelion>`__ made of snakes – a
-trisnekion. I dunno, it seemed to fit?
+It's kind of an inside joke: the Trio logo (and the bot's avatar) is a
+`triskelion <https://en.wikipedia.org/wiki/Triskelion>`__ made of
+snakes – a trisnekion – and one of Trio's original taglines was "Async
+I/O for Humans and Snake People". I think of the 🐍 as standing for
+the friendliness, accessibility, etc. that make Python so welcoming,
+and the bot's purpose is to make the project itself more welcoming and
+accessible, so it just makes sense. Plus it's fun to say.
