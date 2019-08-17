@@ -19,6 +19,3 @@ def fake_webhook(event_type, payload, secret):
         "x-hub-signature": sign_webhook(body, secret),
     }
     return headers, body
-
-
-async def post_fake_webhook(event_type, payload, secret,
