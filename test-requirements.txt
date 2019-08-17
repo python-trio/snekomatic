@@ -17,7 +17,7 @@ cachetools==3.1.1
 certifi==2019.6.16        # via sentry-sdk
 cffi==1.12.3              # via cryptography
 click==7.0                # via quart
-coverage==4.5.4
+coverage==4.5.4           # via pytest-cov
 cryptography==2.7         # via pyjwt
 face==19.1.2              # via glom
 gidgethub==3.1.0
@@ -43,6 +43,7 @@ py==1.8.0                 # via pytest
 pycparser==2.19           # via cffi
 pyjwt[crypto]==1.7.1
 pyparsing==2.4.2          # via packaging
+pytest-cov==2.7.1
 pytest-trio==0.5.2
 pytest==5.1.0
 python-dateutil==2.8.0    # via pendulum
