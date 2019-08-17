@@ -19,7 +19,8 @@ python -m pip --version
 
 python -m pip install -r requirements.txt
 
-#black --diff --check snekbot
+#black --diff --check snekomatic
 
-#pytest -W error -r a --cov="snekbot" --cov-config=.coveragerc --verbose
-#bash <(curl -s https://codecov.io/bash) -n "${CODECOV_NAME}"
+pytest -W error -r a --cov="snekbot" --cov-config=.coveragerc --verbose
+
+bash <(curl -s https://codecov.io/bash) -n "${CODECOV_NAME}"

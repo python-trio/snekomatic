@@ -1,0 +1,24 @@
+trigger:
+  master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+# The 'resources' and 'services' stanzas together start up a
+# containerized postgres, exposed to the test host on the default
+# local port (5432), with database named 'postgres', user named
+# 'postgres', and no password. To get the same thing locally, run:
+#
+#   docker run --rm -p 5432:5432 postgres:alpine
+resources:
+  containers:
+    - container: postgres
+      image: postgres:alpine
+      ports:
+        5432:5432
+
+services:
+  postgres: postgres
+
+steps:
+  - bash: "./ci.sh"
