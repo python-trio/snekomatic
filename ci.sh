@@ -25,6 +25,7 @@ pytest \
     --cov=snekomatic \
     --cov=tests \
     --cov-report=term \
+    --verbose \
     "${@}"
 
 bash <(curl -s https://codecov.io/bash) -n "${CODECOV_NAME}"
