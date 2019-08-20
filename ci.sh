@@ -21,6 +21,10 @@ python -m pip install -r test-requirements.txt
 
 #black --diff --check snekomatic
 
-pytest "${@}"
+pytest \
+    --cov=snekomatic \
+    --cov=tests \
+    --cov-report=term \
+    "${@}"
 
 bash <(curl -s https://codecov.io/bash) -n "${CODECOV_NAME}"
