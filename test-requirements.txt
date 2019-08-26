@@ -32,7 +32,7 @@ importlib-metadata==0.19  # via pluggy, pytest
 itsdangerous==1.1.0       # via quart
 jinja2==2.10.1            # via quart
 markupsafe==1.1.1         # via jinja2
-more-itertools==7.2.0     # via pytest
+more-itertools==7.2.0     # via pytest, zipp
 multidict==4.5.2          # via quart
 outcome==1.0.0            # via trio
 packaging==19.1           # via pytest
@@ -61,4 +61,4 @@ uritemplate==3.0.0        # via gidgethub
 urllib3==1.25.3           # via sentry-sdk
 wcwidth==0.1.7            # via pytest
 wsproto==0.15.0           # via hypercorn
-zipp==0.5.2               # via importlib-metadata
+zipp==0.6.0               # via importlib-metadata
