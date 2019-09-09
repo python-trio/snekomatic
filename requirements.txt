@@ -6,7 +6,7 @@
 #
 aiofiles==0.4.0           # via quart
 anyio==1.0.0
-asks==2.3.5
+asks==2.3.6
 asn1crypto==0.24.0        # via cryptography
 async-generator==1.10     # via anyio, asks, trio
 attrs==19.1.0
