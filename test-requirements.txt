@@ -5,7 +5,7 @@
 #    pip-compile test-requirements.in
 #
 aiofiles==0.4.0           # via quart
-anyio==1.0.0
+anyio==1.1.0
 asks==2.3.6
 asn1crypto==0.24.0        # via cryptography
 async-generator==1.10     # via anyio, asks, pytest-trio, trio
