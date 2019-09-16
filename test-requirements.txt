@@ -28,7 +28,7 @@ hpack==3.0.0              # via h2
 hypercorn[trio]==0.8.2
 hyperframe==5.2.0         # via h2
 idna==2.8                 # via trio
-importlib-metadata==0.19  # via pluggy, pytest
+importlib-metadata==0.22  # via pluggy, pytest
 itsdangerous==1.1.0       # via quart
 jinja2==2.10.1            # via quart
 markupsafe==1.1.1         # via jinja2
