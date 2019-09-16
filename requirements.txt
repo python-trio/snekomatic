@@ -13,7 +13,7 @@ attrs==19.1.0
 blinker==1.4              # via quart
 boltons==19.1.0           # via face, glom
 cachetools==3.1.1
-certifi==2019.6.16        # via sentry-sdk
+certifi==2019.9.11        # via sentry-sdk
 cffi==1.12.3              # via cryptography
 click==7.0                # via quart
 cryptography==2.7         # via pyjwt
