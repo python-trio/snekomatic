@@ -37,7 +37,7 @@ psycopg2-binary==2.8.3
 pycparser==2.19           # via cffi
 pyjwt[crypto]==1.7.1
 python-dateutil==2.8.0    # via pendulum
-pytzdata==2019.2          # via pendulum
+pytzdata==2019.3          # via pendulum
 quart-trio==0.4.0
 quart==0.10.0             # via quart-trio
 sentry-sdk==0.12.2
