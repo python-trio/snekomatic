@@ -59,7 +59,7 @@ toml==0.10.0              # via hypercorn
 trio==0.12.1
 typing-extensions==3.7.4  # via hypercorn
 uritemplate==3.0.0        # via gidgethub
-urllib3==1.25.3           # via sentry-sdk
+urllib3==1.25.5           # via sentry-sdk
 wcwidth==0.1.7            # via pytest
 wsproto==0.15.0           # via hypercorn
 zipp==0.6.0               # via importlib-metadata
