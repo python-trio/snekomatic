@@ -85,7 +85,7 @@ def _succeed(body={}):
 
 
 @pytest.mark.parametrize("s", INVITE_SCENARIOS)
-async def test_invite_scenarios(s, our_app_url, monkeypatch, autojump_clock):
+async def test_invite_scenarios(s, our_app_url, monkeypatch):
     PR_CREATOR = "julia"
     ORG = "acme"
 
