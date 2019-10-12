@@ -30,7 +30,7 @@ hyperframe==5.2.0         # via h2
 idna==2.8                 # via trio
 importlib-metadata==0.23  # via pluggy, pytest
 itsdangerous==1.1.0       # via quart
-jinja2==2.10.1            # via quart
+jinja2==2.10.3            # via quart
 markupsafe==1.1.1         # via jinja2
 more-itertools==7.2.0     # via pytest, zipp
 multidict==4.5.2          # via quart

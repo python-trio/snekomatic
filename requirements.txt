@@ -27,7 +27,7 @@ hypercorn[trio]==0.8.4
 hyperframe==5.2.0         # via h2
 idna==2.8                 # via trio
 itsdangerous==1.1.0       # via quart
-jinja2==2.10.1            # via quart
+jinja2==2.10.3            # via quart
 markupsafe==1.1.1         # via jinja2
 multidict==4.5.2          # via quart
 outcome==1.0.0            # via trio
