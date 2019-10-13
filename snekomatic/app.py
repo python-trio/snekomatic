@@ -1,5 +1,7 @@
+from functools import partial
 import sys
 import os
+import signal
 import trio
 from glom import glom
 import hypercorn
@@ -144,6 +146,18 @@ async def _member_state(gh_client, org, member):
         return glom(response, "state")
 
 
+# This is used for testing; it never actually happens
+@github_app.route("pull_request", action="rotated")
+async def pull_request_rotated(event_type, payload, gh_client):
+    print("PR rotated (I guess you're running the test suite)")
+    try:
+        await trio.sleep(glom(payload, "rotation_time"))
+    except BaseException as exc:
+        print(f"rotation interrupted by {exc!r}")
+        raise
+    print("rotation complete")
+
+
 # There's no "merged" event; instead you get action=closed + merged=True
 @github_app.route("pull_request", action="closed")
 async def pull_request_merged(event_type, payload, gh_client):
@@ -184,6 +198,16 @@ async def pull_request_merged(event_type, payload, gh_client):
 
 
 async def main(*, task_status=trio.TASK_STATUS_IGNORED):
+    shutdown_event = trio.Event()
+
+    async def listen_for_sigterm(*, task_status=trio.TASK_STATUS_IGNORED):
+        with trio.open_signal_receiver(signal.SIGTERM) as signal_aiter:
+            task_status.started()
+            async for signum in signal_aiter:
+                print(f"shutdown on signal signum: {signum}")
+                shutdown_event.set()
+                return
+
     print("~~~ Starting up! ~~~")
     # On Heroku, have to bind to whatever $PORT says:
     # https://devcenter.heroku.com/articles/dynos#local-environment-variables
@@ -197,6 +221,12 @@ async def main(*, task_status=trio.TASK_STATUS_IGNORED):
             # Setting this just silences a warning:
             worker_class="trio",
         )
-        urls = await nursery.start(hypercorn.trio.serve, quart_app, config)
+        await nursery.start(listen_for_sigterm)
+        urls = await nursery.start(partial(
+            hypercorn.trio.serve,
+            quart_app,
+            config,
+            shutdown_trigger=shutdown_event.wait
+        ))
         print("Accepting HTTP requests at:", urls)
         task_status.started(urls)
