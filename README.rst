@@ -322,13 +322,18 @@ paste the blob of data you get into the form, and also save it for
 later.
 
 *Permissions*: This control what your app will be able to read/write
-on Github. Currently the only permissions snekomatic needs are "Pull
-requests: Read & Write" and "Organization members: Read & Write". You
-can give your app more permissions if you want; they'll only be to
-your test org, so it's not particularly dangerous. Also, you can
-always edit the permissions list again later if you need to.
+on Github. There are separate sections for "Repository permissions",
+"Organization permissions", and "User permissions". Currently the
+permissions snekomatic needs are:
 
-*User permissions*: You can skip this section entirely.
+* Under "Repository permissions": "Pull requests: Read & Write".
+* Under "Organization permissions": "Organization members: Read & Write".
+* Under "User permissions": None, you can skip this section entirely.
+
+You can give your app more permissions if you want; they'll only be to
+your test org, so it's not particularly dangerous, and can be useful
+for testing. Also, you can always edit the permissions list again
+later if you want to change things.
 
 *Subscribe to events*: This selects which events GitHub will notify
 your bot about. Currently snekomatic just needs "Pull requests".
