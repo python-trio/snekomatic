@@ -400,14 +400,38 @@ since it's pretty much the same process!
 
 **Other tips:**
 
-- Re-delivering webhooks
+- Working with webhooks: You'll want to get familiar with the page at
+  ``https://github.com/organizations/<YOUR ORG NAME>/settings/apps/<YOUR BOT NAME>/advanced``
+
+  It's super useful for two reasons. First, you can see which webhooks
+  Github thinks it delivered, including the full payload, and what
+  response it got from your app. If you want to know how Github
+  reports a new PR being opened, then you can open a PR in your test
+  org and then look at this page to see what the webhooks did.
+
+  And second, for each webhook there's a "Redeliver" button, which is
+  super handy when debugging. If you make a handler that's supposed to
+  respond to a new PR being created, then probably the first time you
+  try it you'll get some error because you have a typo or whatever.
+  Now your debugging cycle goes: fix your code, push it to Heroku,
+  click the "Redeliver" button, and see if your fix worked, repeat.
+  The key thing here is that the "Redeliver" button lets you skip
+  creating a new test PR after every fix.
 
 - The `Heroku CLI
   <https://devcenter.heroku.com/articles/heroku-cli>`__ is very handy.
   You can do things like see logs, change config variables, connect
   directly to your database to poke around, etc.
 
-  Setting up a git remote so it can find your app
+  If you run the ``heroku`` command inside your local git checkout,
+  then it will automatically try to figure out which heroku app
+  corresponds to this checkout. The way it does this is by looking for
+  a git remote named ``heroku``. So if you do::
+
+    git remote add heroku https://git.heroku.com/<YOUR APP NAME>.git
+
+  Then after that the ``heroku`` command will automatically know which
+  app you're talking about.
 
 - `Sentry <https://sentry.io/>`__ is also handy, because it lets you
   get more info on crashes that happen in your app. You should be able
