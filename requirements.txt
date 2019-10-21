@@ -7,7 +7,6 @@
 aiofiles==0.4.0           # via quart
 anyio==1.1.0
 asks==2.3.6
-asn1crypto==0.24.0        # via cryptography
 async-generator==1.10     # via anyio, asks, trio
 attrs==19.2.0
 blinker==1.4              # via quart
@@ -16,7 +15,7 @@ cachetools==3.1.1
 certifi==2019.9.11        # via sentry-sdk
 cffi==1.12.3              # via cryptography
 click==7.0                # via quart
-cryptography==2.7         # via pyjwt
+cryptography==2.8         # via pyjwt
 face==19.1.2              # via glom
 gidgethub==3.1.0
 glom==19.2.0
