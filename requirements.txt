@@ -30,7 +30,7 @@ itsdangerous==1.1.0       # via quart
 jinja2==2.10.3            # via quart
 markupsafe==1.1.1         # via jinja2
 multidict==4.5.2          # via quart
-outcome==1.0.0            # via trio
+outcome==1.0.1            # via trio
 pendulum==2.0.5
 priority==1.3.0           # via hypercorn
 psycopg2-binary==2.8.3
