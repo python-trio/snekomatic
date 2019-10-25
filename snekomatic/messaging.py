@@ -1,4 +1,4 @@
-"""Messaging for the snekomatic app"""
+"""Messaging for the snekomatic app."""
 # dedent, remove single newlines (but not double-newlines), remove
 # leading/trailing newlines
 
