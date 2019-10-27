@@ -26,6 +26,78 @@
 - how to listen for comments? like "@trio-bot ping" where it posts a command saying "pong"?
   - maybe a generic dispatcher?
 
+ways you can get notified of new comment body text:
+- event_type = "issues", action="opened", and then text is in "issue.body"
+- event_type = "pull_request", action="opened", and then text is in "pull_request.body"
+- event_type = "issue_comment", action="created", and then text is in "comment.body"
+- event_type = "issue_comment", action="edited", and then old text is in "changes.body.from", and new text is in "comment.body"
+  (editing a regular pull request comment gives this as well)
+- event_type="pull_request_review_comment", action="created", text is in "comment.body"
+- event_type = "pull_request_review", action="submitted" (or "edited"?), text is in "review.body"
+  (can be null, if there is no body)
+  (with "edited" you also get a "changes" subobject, but it can be empty)
+- event_type = "pull_request", action="edited", new text is in "pull_request.body", old text in "changes.body.from"
+- event_type = "issues", action="edited", new text is in "issue.body", old text in "changes.body.from"
+- event_type = "issue_comment", action="deleted", old text in "comment.body", no changes section
+
+on edits
+issue author is "issue.user.login", editor is "sender.login", they might be different
+
+also:
+- edits to review comments? (toplevel or not?)
+- commit comments (maybe just ignore these for now?)
+
+@on_comment("ping")
+async def handle_ping(command, comment, sender):
+    ...
+
+@on_comment("ping")
+async def handle_ping(old_command, new_command, comment, sender):
+    ...
+
+levels of cleverness:
+- only detect commands inside regular issue comments
+- only detect commands when new comment/etc. is posted
+- also detect new commands when comment/etc. is edited, but treat them as new from-scratch commands
+- also detect when an old command goes away and do something with that, like cancel or modify it or whatever
+
+we probably only want levels 0 or 1 for now
+
+what does handler want?
+
+- the command extracted from the body of the comment
+- gh_client
+- the the actual event_type/payload in case the handler wants to do something clever with those
+- URLs for replying and for reacting - can be computed from the event_type+payload, so maybe just want helper functions, not arguments
+
+@on_comment("ping")
+async def handle_ping(command, event_type, payload, gh_client):
+    assert command == ["ping"]
+
+
+we need to be able to reply to comments, and have some kind of serializable address for the replies, so they can be delivered later, outside the handler
+- to post a top-level comment on an issue: just need "issue.comments_url"
+  event types: issues, issue_comment
+- to post a top-level comment on a pull request: just need "pull_request.comments_url"
+  - and that's also how you reply to a PR review top-level comment
+  event types: pull_request, pull_request_review
+- to reply to a PR comment: https://developer.github.com/v3/pulls/comments/#create-a-review-comment-reply
+  need the PR number and the top-level comment ID
+  given a "pull_request_review_comment" event, find "pull_request.review_comments_url", and append "/:comment_id/replies"
+  where :comment_id is:
+  - if there's a "comment.in_reply_to_id", use that
+  - otherwise, it's already a top-level comment, so use "comment.id"
+  event type: pull_request_review_comment
+
+in all cases, you post to that URL with an object like {"body": "...."}
+
+if we want to "react" to comments:
+- for a top-level issue/PR: https://developer.github.com/v3/reactions/#create-reaction-for-an-issue
+- https://developer.github.com/v3/reactions/#create-reaction-for-an-issue-comment
+- https://developer.github.com/v3/reactions/#create-reaction-for-a-pull-request-review-comment
+
+so again, just need to construct and track this URL
+
 * Github webhook payload examples
 
 ** New issue created

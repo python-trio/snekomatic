@@ -320,3 +320,77 @@ class GithubApp:
             pass
         else:
             print(f"Rate limit for install {installation_id}: {limit}")
+
+
+def parse_commands(body_text):
+    lines = body_text.splitlines()
+    for line in lines:
+        words = line.split()
+        # TODO: don't hardcode bot name?
+        # https://developer.github.com/v3/apps/#get-the-authenticated-github-app
+        if words[0] in ["@trio-bot", "trio-bot"]:
+            yield words[1:]
+
+
+def reply_url(event_type, payload):
+    if event_type in ["issues", "issue_comment"]:
+        return glom(payload, "issue.comments_url")
+    elif event_type in ["pull_request", "pull_request_review"]:
+        return glom(payload, "pull_request.comments_url")
+    elif event_type in ["pull_request_review_comment"]:
+        base_url = glom(payload, "pull_request.review_comments_url")
+        try:
+            in_reply_to_id = glom(payload, "comment.in_reply_to_id")
+        except LookupError:
+            in_reply_to_id = glom(payload, "comment.id")
+        return f"{base_url}/{in_reply_to_id}/replies"
+    else:
+        raise ValueError(f"unknown event_type: {event_type!r}")
+
+
+def reaction_url(event_type, payload):
+    if event_type == "issue":
+        return glom(payload, "issue.url") + "/reactions"
+    elif event_type == "pull_request":
+        # XX TODO: check if this is correct (github doesn't document it)
+        return glom(payload, "pull_request.issue_url") + "/reactions"
+    elif event_type in ["issue_comment", "pull_request_review_comment"]:
+        return glom(payload, "comment.url") + "/reactions"
+    elif event_type == "pull_request_review":
+        # XX TODO: completely made this URL up, there are no docs, no idea if
+        # it's right (or even whether there is a right answer)
+        pr_url = glom(payload, "pull_request.url")
+        review_id = glom(payload, "review.id")
+        return f"{pr_url}/reviews/{review_id}/reactions"
+    else:
+        raise ValueError(f"unknown event_type: {event_type!r}")
+
+
+class InvalidCommandError(Exception):
+    pass
+
+
+def validate_command(parsed_command, supported_commands):
+    if parsed_command not in supported_commands:
+        raise InvalidCommandError
+
+
+async def dispatch_commands(command_handler_table, body_text):
+    for command in parse_commands(body_text):
+        validate_command(command)
+        for handler in command_handler_table.get(command, []):
+
+
+
+# Not included currently:
+# - edits/deletions
+# - commit comments
+# - "team discussion" comments
+@github_app.route("issues", action="opened")
+@github_app.route("pull_request", action="opened")
+@github_app.route("issue_comment", action="created")
+@github_app.route("pull_request_review_comment", action="created")
+async def handle_command(event_type, payload, gh_client):
+
+
+    for command in
