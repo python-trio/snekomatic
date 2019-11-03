@@ -402,6 +402,7 @@ def reaction_url(event_type, payload):
     elif event_type == "pull_request_review":
         # XX TODO: completely made this URL up, there are no docs, no idea if
         # it's right (or even whether there is a right answer)
+        # UPDATE: yeah this is wrong
         pr_url = glom(payload, "pull_request.url")
         review_id = glom(payload, "review.id")
         return f"{pr_url}/reviews/{review_id}/reactions"
