@@ -410,5 +410,5 @@ def parse_commands(body_text):
         # TODO: don't hardcode bot name?
         # TODO: accept /-commands?
         # https://developer.github.com/v3/apps/#get-the-authenticated-github-app
-        if words[0] in ["@trio-bot", "trio-bot"]:
+        if words and words[0] in ["@trio-bot", "trio-bot"]:
             yield words[1:]
