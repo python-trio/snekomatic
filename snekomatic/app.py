@@ -8,9 +8,10 @@ import quart
 from quart import request
 from quart_trio import QuartTrio
 import gidgethub
+from gidgethub.sansio import accept_format
 
 from .db import PersistentStringSet
-from .gh import GithubApp
+from .gh import GithubApp, reply_url, reaction_url
 
 # we should stash the delivery id in a contextvar and include it in logging
 # also maybe structlog? eh print is so handy for now
@@ -180,6 +181,20 @@ async def pull_request_merged(event_type, payload, gh_client):
     await gh_client.post(
         glom(payload, "pull_request.comments_url"),
         data={"body": invite_message.format(username=creator)},
+    )
+
+
+@github_app.route_command("ping")
+async def handle_ping(command, event_type, payload, gh_client):
+    assert command == ["ping"]
+    await gh_client.post(
+        reply_url(event_type, payload),
+        data={"body": "pong!"},
+    )
+    await gh_client.post(
+        reaction_url(event_type, payload),
+        data={"content": "heart"},
+        accept=accept_format(version="squirrel-girl-preview"),
     )
 
 

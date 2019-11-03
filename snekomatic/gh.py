@@ -238,7 +238,19 @@ class GithubApp:
         self._installation_tokens = defaultdict(CachedInstallationToken)
         # event_type -> [Route(...), Route(...), ...]
         self._routes = defaultdict(list)
+        # command name -> handler
+        self._command_routes = {}
         self._cache = cachetools.LRUCache(cache_size)
+
+        # Not included currently:
+        # - edits/deletions
+        # - commit comments
+        # - "team discussion" comments
+        self.add(self._dispatch_command, "issues", action="opened")
+        self.add(self._dispatch_command, "pull_request", action="opened")
+        self.add(self._dispatch_command, "issue_comment", action="created")
+        self.add(self._dispatch_command, "pull_request_review_comment", action="created")
+
 
     user_agent = _lazy_env_fallback("user_agent")
     app_id = _lazy_env_fallback("app_id")
@@ -298,6 +310,17 @@ class GithubApp:
 
         return decorator
 
+    def add_command(self, async_fn, command_name):
+        assert command_name not in self._command_routes:
+        self._command_routes[command_name] = async_fn
+
+    def route_command(self, command_name):
+        def decorator(async_fn):
+            self.add_command(async_fn, command_name)
+            return async_fn
+
+        return decorator
+
     async def dispatch_webhook(self, headers, body):
         event = Event.from_http(headers, body, secret=self.webhook_secret)
         print(
@@ -321,15 +344,28 @@ class GithubApp:
         else:
             print(f"Rate limit for install {installation_id}: {limit}")
 
+    async def _dispatch_command(self, event_type, payload, gh_client):
+        body = get_comment_body(event_type, payload)
+        for command in parse_commands(body):
+            if command[0] in self._command_routes:
+                # TODO: handle errors here
+                await self._command_routes[command[0]](command, event_type, payload,
+                                                       gh_client)
+            else:
+                # TODO: handle unrecognized commands
+                raise NotImplementedError
 
-def parse_commands(body_text):
-    lines = body_text.splitlines()
-    for line in lines:
-        words = line.split()
-        # TODO: don't hardcode bot name?
-        # https://developer.github.com/v3/apps/#get-the-authenticated-github-app
-        if words[0] in ["@trio-bot", "trio-bot"]:
-            yield words[1:]
+def get_comment_body(event_type, payload):
+    if event_type == "issues":
+        return glom(payload, "issue.body")
+    elif event_type == "pull_request":
+        return glom(payload, "pull_request.body")
+    elif event_type in ["issue_comment","pull_request_review_comment"]:
+        return glom(payload, "comment.body")
+    elif event_type == "pull_request_review":
+        return glom(payload, "review.body")
+    else:
+        raise ValueError(f"unknown event_type: {event_type!r}")
 
 
 def reply_url(event_type, payload):
@@ -349,7 +385,7 @@ def reply_url(event_type, payload):
 
 
 def reaction_url(event_type, payload):
-    if event_type == "issue":
+    if event_type == "issues":
         return glom(payload, "issue.url") + "/reactions"
     elif event_type == "pull_request":
         # XX TODO: check if this is correct (github doesn't document it)
@@ -366,31 +402,12 @@ def reaction_url(event_type, payload):
         raise ValueError(f"unknown event_type: {event_type!r}")
 
 
-class InvalidCommandError(Exception):
-    pass
-
-
-def validate_command(parsed_command, supported_commands):
-    if parsed_command not in supported_commands:
-        raise InvalidCommandError
-
-
-async def dispatch_commands(command_handler_table, body_text):
-    for command in parse_commands(body_text):
-        validate_command(command)
-        for handler in command_handler_table.get(command, []):
-
-
-
-# Not included currently:
-# - edits/deletions
-# - commit comments
-# - "team discussion" comments
-@github_app.route("issues", action="opened")
-@github_app.route("pull_request", action="opened")
-@github_app.route("issue_comment", action="created")
-@github_app.route("pull_request_review_comment", action="created")
-async def handle_command(event_type, payload, gh_client):
-
-
-    for command in
+def parse_commands(body_text):
+    lines = body_text.splitlines()
+    for line in lines:
+        words = line.split()
+        # TODO: don't hardcode bot name?
+        # TODO: accept /-commands?
+        # https://developer.github.com/v3/apps/#get-the-authenticated-github-app
+        if words[0] in ["@trio-bot", "trio-bot"]:
+            yield words[1:]
