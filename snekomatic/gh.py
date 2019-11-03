@@ -311,7 +311,7 @@ class GithubApp:
         return decorator
 
     def add_command(self, async_fn, command_name):
-        assert command_name not in self._command_routes:
+        assert command_name not in self._command_routes
         self._command_routes[command_name] = async_fn
 
     def route_command(self, command_name):
