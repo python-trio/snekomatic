@@ -347,6 +347,12 @@ class GithubApp:
 
     async def _dispatch_command(self, event_type, payload, gh_client):
         body = get_comment_body(event_type, payload)
+        # This can happen when someone does a NON-review comment on a PR diff.
+        # GH creates a "pull_request_review" object with null body, and also a
+        # "pull_request_review_comment" object with the actual body.
+        if body is None:
+            assert event_type == "pull_request_review"
+            return
         for command in parse_commands(body):
             if command[0] in self._command_routes:
                 # TODO: handle errors here
