@@ -249,6 +249,7 @@ class GithubApp:
         self.add(self._dispatch_command, "issues", action="opened")
         self.add(self._dispatch_command, "pull_request", action="opened")
         self.add(self._dispatch_command, "issue_comment", action="created")
+        self.add(self._dispatch_command, "pull_request_review", action="submitted")
         self.add(self._dispatch_command, "pull_request_review_comment", action="created")
 
 
