@@ -45,7 +45,7 @@ sniffio==1.1.0            # via anyio, trio
 sortedcontainers==2.1.0   # via quart, trio
 toml==0.10.0              # via hypercorn
 trio==0.12.1
-typing-extensions==3.7.4  # via hypercorn
+typing-extensions==3.7.4.1  # via hypercorn
 uritemplate==3.0.0        # via gidgethub
 urllib3==1.25.6           # via sentry-sdk
 wsproto==0.15.0           # via hypercorn
