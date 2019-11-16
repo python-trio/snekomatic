@@ -25,6 +25,7 @@
   - delete branch
 - how to listen for comments? like "@trio-bot ping" where it posts a command saying "pong"?
   - maybe a generic dispatcher?
+  - NEXT STEP: write unit tests for the command dispatch
 
 ways you can get notified of new comment body text:
 - event_type = "issues", action="opened", and then text is in "issue.body"
