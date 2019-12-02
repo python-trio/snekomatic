@@ -50,7 +50,7 @@ python-dateutil==2.8.0    # via pendulum
 pytzdata==2019.3          # via pendulum
 quart-trio==0.4.0
 quart==0.10.0             # via quart-trio
-sentry-sdk==0.13.0
+sentry-sdk==0.13.4
 six==1.12.0               # via cryptography, packaging, python-dateutil
 sniffio==1.1.0            # via anyio, trio
 sortedcontainers==2.1.0   # via quart, trio
