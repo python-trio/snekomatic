@@ -3891,6 +3891,238 @@ event type: "issue_comment"
 }
 #+END_SRC
 
+* Github action notes
+We'll need to run code on checkouts:
+- prepping before testing
+  - format, bump version
+- pip-compile
+- merge into target branch + optionally: tag, upload release artifacts
+
+"generate release artifacts" goes in there somewhere too (which involves running setup.py, i.e. arbitrary code execution)
+
+it's tempting to use github actions for these, b/c it means someone else is taking care of sandboxing, displaying output as it runs, etc.
+
+a github app can trigger a github action at will, by sending a "repository_dispatch" event: https://help.github.com/en/actions/automating-your-workflow-with-github-actions/events-that-trigger-workflows#external-events-repository_dispatch
+this contains an arbitrary JSON payload
+
+the event is accessible to any app that has the "Repository: Contents: read-only" permission (or better)
+
+so one approach would be to create a single "action" dockerfile that lives in this repo, and does various things depending on the JSON payload
+and then this app could invoke that by sending a repository_dispatch event
+and the action could even say when it's done by sending a repository_dispatch event back
+(though have to think about if there are any risks due to others forging this event)
+
+for uploading release artifacts: it looks like pypi's new API key support does allow us to store a single long-lived API key, and use it to mint new keys with restrictions like "single-use", "one project only", "one release version only", "only valid for X minutes"
+
+github actions has an "artifacts" concept but it's pretty useless -- you can upload zip files into some storage that github maintains, but the *only* ways to access them are either manually through a web browser, or if you're another job within the same actions run
+so I guess for generating/uploading release artifacts, the best option is to use a single action invocation to run setup.py + twine upload, and to pass it a strictly-locked-down pypi API key. We'd have to pass this through the repository_dispatch webhook, which I guess means it would be visible to everyone who can subscribe to that event.
+...though this does make me nervous b/c it's still broadcasting an API key to who-knows-who, even if the API key is locked down :-/
+
+alternatively I guess the action could stash the artifacts somewhere like a release or in the github "package repository", and then snekomatic could pull it down from there?
+there don't appear to be any docs at all on how to upload to the package repository via an API. nice.
+we can easily make releases and attach artifacts the them though, which... really makes plenty of sense anyway, since we actually do want to make a tag for these. and the actions GITHUB_TOKEN does get the permissions to do this.
+
+this page is super well hidden, but it has the key information on how a github action can find out who invoked it and why:
+https://help.github.com/en/actions/automating-your-workflow-with-github-actions/using-environment-variables
+and then you have to get the access token through the GITHUB_TOKEN *secret*, which has to be explicitly passed into the action as an "input" specified in the .yaml file
+https://help.github.com/en/actions/automating-your-workflow-with-github-actions/authenticating-with-the-github_token
+
+another useful reference is to look at the source of the github.com/actions/toolkit repo
+
+----
+
+so, possible setup:
+
+in each managed repo, we include the same file .github/workflows/trio-bot.yml
+
+#+BEGIN_SRC yaml
+name: "trio-bot worker action"
+on: repository_dispatch
+jobs:
+  triobot:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: python-trio/snekomatic@master
+      with:
+        repo-token: "${{ secrets.GITHUB_TOKEN }}"
+        app: "trio-bot"
+#+END_SRC
+
+In this repo, we set up an action.yml and Dockerfile etc. so that github knows how to map the "python-trio/snekomatic" action to a python script we control
+
+/try workflow:
+
+App sees comment, verifies permission, computes new version (if any), sends repository_dispatch like:
+
+  {
+   "action": "snekomatic/prepare-merge-branch",
+   "payload": {
+     "job-id": "xxxx",
+     "target-branch": "master",
+     "test-branch": "try/{date}-{jobid}",
+     "ref": "XXX",
+     "release": "version"   # or null
+    }
+  }
+
+the action runs, and:
+- verifies that the $GITHUB_ACTOR is "trio-bot" (using the "INPUT_APP" from our workflow yml)
+- sends back a repository_dispatch like:
+- clones the repo
+  - can look at the output from an actions/checkout run to see how github goes about cloning from an action
+- creates a new branch named $test-branch whose head is $ref
+- merges in the target branch
+- runs black
+- if $release is non-null, sets the version number + updates changelog
+- pushes the new branch up to the repo
+
+then it sends back a repository_dispatch like:
+
+  {
+   "action": "snekomatic/status-report",
+   "payload": {
+     "job-id": "xxxx",
+
+---
+
+okay I played around with actions a bit in a test repo and learned some things
+
+https://github.com/njsmith/stunning-tribble/runs/318507531
+https://webhook.site/#!/039397b0-3a1d-4822-aede-b4d1b5d47ee8/416317dc-6cbc-4308-9d00-88c444b1cdf8/1
+
+every action run is attached to a particular commit
+this shows up in the GITHUB_SHA envvar and is the default for the actions/checkout action
+but it also determines where the actions *output* is attached – it goes onto that commit as a "check"
+
+when an action starts, you get a check_run event with action="created"; it also includes a check_suite key with info on a particular check suite
+then you get check_run action="completed" and check_suite action="completed"
+
+these events have an "app" key that tells us about which app created them; for github actions the slug is "github-actions", id 15368
+
+apparently there is absolutely no way to match up the event that triggered an action with the corresponding run status
+the action itself knows the event, but it doesn't know its own URL
+the check_run/check_suite events report on the action, but they don't have any information on the triggering event
+
+the only identifying information you get is that the check_run and check_suite both have a head_sha, and the check_suite has a head_branch
+but the head_branch isn't even accurate! I tried making a new branch, and a push action ran with GITHUB_REF=refs/heads/<new branch name>, but the corresponding check_suite events had head_branch="master"!
+
+there's also a "create" event generated when a new branch/ref is created
+maybe if that triggered the action it would be different?
+...nope, still says head_branch="master"
+
+actions are: "workflow" consists of "jobs" and each "job" consists of "steps"
+a "job" is a single VM image with a single persistent working dir that's shared by all "steps"
+1 "job" = 1 "check_run" in the API
+
+I guess another option would be to set up a state machine with app+actions interacting
+e.g. to do a try or merge, app creates a branch with a magic name
+action triggers on the branch name, runs to set it up, pushes to a new magic name to trigger CI
+app observes CI outcome, triggers an action to build/tag/release that magic branch
+app observes release appearing, uploads artifacts to pypi
+
+but I am just uncomfortable in general at all the fragile connections between these steps
+what if someone mutates the branch in the middle. what if someone just makes a release without going through the previous steps; will the app pick it up and upload to pypi?
+I just want to pass data from one step to another and know that what ends up on pypi comes from the repo. everything is hashed. why is this so hard
+
+----
+
+well, the pre-flight setup is all pretty boring and safe, so I guess we can do that on heroku pretty easily. And then we have a known snapshot release candidate.
+we can push that to github and gather CI results on the exact revision that we know we pushed.
+
+and then we just need to tag/build/upload; the build needs to be sandboxed
+
+I guess we could use some actions on a *different* repo to do stuff that needs to be sandboxed? like have a workflow on snekomatic that does
+
+- check out and build a revision from *another* repo; save the artifacts <-- no access to secrets
+- upload the artifacts <-- does get access to secrets
+
+if this is a security boundary then I guess we need to do it as two separate jobs (NOT just two separate steps), because each step has sudo access to the VM? e.g. can the first step go and rewrite files that the second step depends on, like the magic event file?
+
+it's still super annoying that there's no good way to match up the action output with the triggering event, but... I guess this would work
+(maybe we could do something obnoxious: create a dummy orphan commit for each job we want to run, or something?)
+
+...you can interpolate variables into job specs, and that has access to the event payload... can we name the job after a unique id?
+https://help.github.com/en/actions/automating-your-workflow-with-github-actions/contexts-and-expression-syntax-for-github-actions
+
+jobs:
+  "{{ github.event.client_payload.jobid }}":
+    runs-on: ubuntu-latest
+    steps:
+      ...
+
+there's no way this works. is there?
+
+haha nope:
+
+```
+### ERRORED 04:06:43Z
+
+- There was an unexpected error when executing this Action. For help debugging what went wrong, please contact support@github.com.
+
+The unique ID for this error is 3F49:5204:1219F:24FA0:5DDB5351.
+```
+
+I tried putting:
+  name: "{{ github.event.client_payload.jobid }}"
+at the top-level, and that was treated literally (not interpolated)
+and ditto for setting it as a name: field on a single job
+
+OH NO IT WAS JUST MISSING A $ SIGN
+
+so this worked:
+
+1. this workflow:
+
+   #+BEGIN_SRC yaml
+   on: [repository_dispatch]
+
+   jobs:
+     jobone:
+       runs-on: ubuntu-latest
+       name: "${{ github.event.client_payload.jobid }}"
+
+       steps:
+       - name: Run stuff
+         run: |
+           env | sort
+           cat ${GITHUB_EVENT_PATH}
+   #+END_SRC
+
+2. running:
+
+   http -p HBhb POST https://api.github.com/repos/njsmith/stunning-tribble/dispatches Accept:application/vnd.github.everest-preview+json "Authorization:token $TMP_TOKEN" event_type=test-event client_payload:='{"jobid": "xXxX"}'
+
+3. got a webhook:
+
+   x-github-event: check_run
+   #+BEGIN_SRC js
+   {
+     "action": "created",
+     "check_run": {
+       "name": "xXxX",  # <-- WOO
+       "url": "https://api.github.com/repos/njsmith/stunning-tribble/check-runs/318679949",
+       "html_url": "https://github.com/njsmith/stunning-tribble/runs/318679949",     ...
+     },
+     ...
+   }
+   #+END_SRC
+
+   and then later got "completed", etc.
+
+it *doesn't* work to put a "${{ ... }}" inside a job *id*, as like:
+
+jobs:
+  "jobid ${{ github.event.client_payload.jobid }}":
+    ...
+
+that gives - Your workflow file was invalid: The pipeline is not valid. .github/workflows/templ.yml (Line: 4, Col: 3): Unrecognized named-value: 'github'. Located at position 1 within expression: github.event.client_payload.jobid
+
+it also *doesn't* work to try to template the workflow name at the top-level:
+
+name: "pipelinename ${{ github.event.client_payload.jobid }}"
+
+- Your workflow file was invalid: The pipeline is not valid. .github/workflows/templ.yml (Line: 3, Col: 7): Unrecognized named-value: 'github'. Located at position 1 within expression: github.event.client_payload.jobid
+
 * Old notes
 
 Tutorial: https://docs.octomachinery.dev/projects/tutorial/
