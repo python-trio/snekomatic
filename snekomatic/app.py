@@ -188,8 +188,7 @@ async def pull_request_merged(event_type, payload, gh_client):
 async def handle_ping(command, event_type, payload, gh_client):
     assert command == ["ping"]
     await gh_client.post(
-        reply_url(event_type, payload),
-        data={"body": "pong!"},
+        reply_url(event_type, payload), data={"body": "pong!"}
     )
     await gh_client.post(
         reaction_url(event_type, payload),

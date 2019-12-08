@@ -249,9 +249,14 @@ class GithubApp:
         self.add(self._dispatch_command, "issues", action="opened")
         self.add(self._dispatch_command, "pull_request", action="opened")
         self.add(self._dispatch_command, "issue_comment", action="created")
-        self.add(self._dispatch_command, "pull_request_review", action="submitted")
-        self.add(self._dispatch_command, "pull_request_review_comment", action="created")
-
+        self.add(
+            self._dispatch_command, "pull_request_review", action="submitted"
+        )
+        self.add(
+            self._dispatch_command,
+            "pull_request_review_comment",
+            action="created",
+        )
 
     user_agent = _lazy_env_fallback("user_agent")
     app_id = _lazy_env_fallback("app_id")
@@ -356,18 +361,20 @@ class GithubApp:
         for command in parse_commands(body):
             if command[0] in self._command_routes:
                 # TODO: handle errors here
-                await self._command_routes[command[0]](command, event_type, payload,
-                                                       gh_client)
+                await self._command_routes[command[0]](
+                    command, event_type, payload, gh_client
+                )
             else:
                 # TODO: handle unrecognized commands
                 raise NotImplementedError
+
 
 def get_comment_body(event_type, payload):
     if event_type == "issues":
         return glom(payload, "issue.body")
     elif event_type == "pull_request":
         return glom(payload, "pull_request.body")
-    elif event_type in ["issue_comment","pull_request_review_comment"]:
+    elif event_type in ["issue_comment", "pull_request_review_comment"]:
         return glom(payload, "comment.body")
     elif event_type == "pull_request_review":
         return glom(payload, "review.body")

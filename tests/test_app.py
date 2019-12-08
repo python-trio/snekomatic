@@ -38,6 +38,7 @@ class InviteScenario:
     expect_in_db_after = attr.ib()
     expect_invite = attr.ib()
 
+
 INVITE_SCENARIOS = [
     InviteScenario(
         pr_merged=False,
@@ -76,6 +77,7 @@ INVITE_SCENARIOS = [
     ),
 ]
 
+
 def _succeed(body={}):
     return (
         200,
@@ -98,17 +100,11 @@ async def test_invite_scenarios(s, our_app_url, monkeypatch):
             "action": "closed",
             "pull_request": {
                 "merged": s.pr_merged,
-                "user": {
-                    "login": PR_CREATOR,
-                },
+                "user": {"login": PR_CREATOR},
                 "comments_url": "fake-comments-url",
             },
-            "organization": {
-                "login": ORG,
-            },
-            "installation": {
-                "id": "000000",
-            },
+            "organization": {"login": ORG},
+            "installation": {"id": "000000"},
         },
         TEST_WEBHOOK_SECRET,
     )

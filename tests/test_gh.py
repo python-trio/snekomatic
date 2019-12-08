@@ -1,16 +1,33 @@
 import pytest
 
 import asks
-from snekomatic.gh import BaseGithubClient, GithubApp
+from snekomatic.gh import (
+    BaseGithubClient,
+    GithubApp,
+    reply_url,
+    reaction_url,
+    get_comment_body,
+)
 import gidgethub
 from gidgethub.sansio import accept_format
 from glom import glom
 import trio
 import pendulum
 import os
+import json
+from pathlib import Path
 
 from .util import fake_webhook, save_environ
 from .credentials import *
+
+SAMPLE_DATA_DIR = Path(__file__).absolute().parent / "sample-data"
+
+
+def get_sample_data(name):
+    data = json.loads((SAMPLE_DATA_DIR / (name + ".json")).read_text())
+    data["installation"]["id"] = TEST_INSTALLATION_ID
+    return data
+
 
 # Smoke test for the basic asks client
 async def test_basic_gh_client():
@@ -260,3 +277,67 @@ async def test_github_app_webhook_client_works():
     )
 
     assert handler_ran
+
+
+# FIXME: convert these into a bunch of scenario-style tests?
+# [
+#     Scenario("issue-created-webhook",
+#              expected_body=...,
+#              expected_reply_url=...,
+#              expected_reaction_url=...,
+#              ),
+#     ...
+# ]
+
+
+def test_get_comment_body():
+    payload = get_sample_data("issue-created-webhook")
+    assert (
+        get_comment_body("issues", payload)
+        == "This must be addressed immediately, if not before."
+    )
+    # FIXME: other comment types
+
+
+def test_reply_url():
+    payload = get_sample_data("issue-created-webhook")
+    assert (
+        reply_url("issues", payload)
+        == "https://api.github.com/repos/njsmith-test-org/test-repo/issues/5/comments"
+    )
+    # FIXME: other comment types
+
+
+def test_reaction_url():
+    payload = get_sample_data("issue-created-webhook")
+    assert (
+        reaction_url("issues", payload)
+        == "https://api.github.com/repos/njsmith-test-org/test-repo/issues/5/reactions"
+    )
+    # FIXME: other comment types
+
+
+async def test_github_app_command_routing(autojump_clock):
+    app = GithubApp(
+        user_agent=TEST_USER_AGENT,
+        app_id=TEST_APP_ID,
+        private_key=TEST_PRIVATE_KEY,
+        webhook_secret=TEST_WEBHOOK_SECRET,
+    )
+
+    record = []
+
+    @app.route_command("test-command")
+    async def test_command_handler(command, event_type, payload, gh_client):
+        assert gh_client.installation_id == TEST_INSTALLATION_ID
+        record.append((command, event_type, payload))
+
+    payload = get_sample_data("issue-created-webhook")
+    payload["issue"]["body"] = "@trio-bot test-command hi"
+
+    await app.dispatch_webhook(
+        *fake_webhook("issues", payload, secret=TEST_WEBHOOK_SECRET)
+    )
+
+    assert record == [(["test-command", "hi"], "issues", payload)]
+    # FIXME: other comment types
