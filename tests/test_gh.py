@@ -1,6 +1,7 @@
 import pytest
 
 import asks
+import attr
 from snekomatic.gh import (
     BaseGithubClient,
     GithubApp,
@@ -279,42 +280,93 @@ async def test_github_app_webhook_client_works():
     assert handler_ran
 
 
-# FIXME: convert these into a bunch of scenario-style tests?
-# [
-#     Scenario("issue-created-webhook",
-#              expected_body=...,
-#              expected_reply_url=...,
-#              expected_reaction_url=...,
-#              ),
-#     ...
-# ]
+@attr.s
+class Scenario(object):
+    test_data = attr.ib()
+    event_type = attr.ib()
+    expected_body = attr.ib()
+    expected_reply_url = attr.ib()
+    expected_reaction_url = attr.ib()
+    def payload(self):
+        return get_sample_data(self.test_data)
+    def body(self):
+        return get_comment_body(self.event_type, self.payload())
+    def reply_url(self):
+        return reply_url(self.event_type, self.payload())
+    def reaction_url(self):
+        return reaction_url(self.event_type, self.payload())
 
 
-def test_get_comment_body():
-    payload = get_sample_data("issue-created-webhook")
-    assert (
-        get_comment_body("issues", payload)
-        == "This must be addressed immediately, if not before."
-    )
-    # FIXME: other comment types
+# FIXME: other comment types
+scenarios = [
+    Scenario(test_data="issue-created-webhook",
+             event_type="issues",
+             expected_body="This must be addressed immediately, if not before.",
+             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/5/comments",
+             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/5/reactions",
+             ),
+    Scenario(test_data="comment-existing-issue",
+             event_type="issue_comment",
+             expected_body="I agree with the original poster.",
+             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/5/comments",
+             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/comments/544211719/reactions",
+             ),
+    Scenario(test_data="comment-edited",
+             event_type="issue_comment",
+             expected_body="I agree with the original poster.\r\n\r\n[EDIT: on further thought, I disagree.]",
+             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/5/comments",
+             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/comments/544211719/reactions",
+             ),
+    Scenario(test_data="new-pr-created",
+             event_type="pull_request",
+             expected_body="",
+             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/comments",
+             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/reactions",
+             ),
+    Scenario(test_data="comment-existing-pr",
+             event_type="issue_comment",
+             expected_body="hello world :wave: ",
+             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/comments",
+             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/comments/544211921/reactions",
+             ),
+    Scenario(test_data="add-single-comment",
+             event_type="pull_request_review",
+             expected_body=None,
+             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/comments",
+             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/6/reviews/304238138/reactions",
+             ),
+    Scenario(test_data="pr-review-comment",
+             event_type="pull_request_review_comment",
+             expected_body="This is just a standalone comment.",
+             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/6/comments/336759908/replies",
+             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/comments/336759908/reactions",
+             ),
+    Scenario(test_data="full-pr-review",
+             event_type="pull_request_review",
+             expected_body="Truly a critical fix. However, maybe it needs more cowbell?",
+             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/comments",
+             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/6/reviews/304238151/reactions",
+             ),
+    Scenario(test_data="pr-review-comment-01",
+             event_type="pull_request_review_comment",
+             expected_body="This is part of a review.",
+             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/6/comments/336759921/replies",
+             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/comments/336759921/reactions",
+             ),
+    Scenario(test_data="pr-review",
+             event_type="pull_request_review",
+             expected_body="Truly a critical fix. However, maybe it needs more cowbell?",
+             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/comments",
+             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/6/reviews/304238151/reactions",
+             ),
+]
 
 
-def test_reply_url():
-    payload = get_sample_data("issue-created-webhook")
-    assert (
-        reply_url("issues", payload)
-        == "https://api.github.com/repos/njsmith-test-org/test-repo/issues/5/comments"
-    )
-    # FIXME: other comment types
-
-
-def test_reaction_url():
-    payload = get_sample_data("issue-created-webhook")
-    assert (
-        reaction_url("issues", payload)
-        == "https://api.github.com/repos/njsmith-test-org/test-repo/issues/5/reactions"
-    )
-    # FIXME: other comment types
+@pytest.mark.parametrize("scenario", scenarios)
+def test_webhook_scenarios(scenario):
+    assert scenario.body() == scenario.expected_body
+    assert scenario.reply_url() == scenario.expected_reply_url
+    assert scenario.reaction_url() == scenario.expected_reaction_url
 
 
 async def test_github_app_command_routing(autojump_clock):
