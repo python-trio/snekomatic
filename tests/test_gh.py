@@ -1,16 +1,34 @@
 import pytest
 
 import asks
-from snekomatic.gh import BaseGithubClient, GithubApp
+import attr
+from snekomatic.gh import (
+    BaseGithubClient,
+    GithubApp,
+    reply_url,
+    reaction_url,
+    get_comment_body,
+)
 import gidgethub
 from gidgethub.sansio import accept_format
 from glom import glom
 import trio
 import pendulum
 import os
+import json
+from pathlib import Path
 
 from .util import fake_webhook, save_environ
 from .credentials import *
+
+SAMPLE_DATA_DIR = Path(__file__).absolute().parent / "sample-data"
+
+
+def get_sample_data(name):
+    data = json.loads((SAMPLE_DATA_DIR / (name + ".json")).read_text())
+    data["installation"]["id"] = TEST_INSTALLATION_ID
+    return data
+
 
 # Smoke test for the basic asks client
 async def test_basic_gh_client():
@@ -260,3 +278,117 @@ async def test_github_app_webhook_client_works():
     )
 
     assert handler_ran
+
+
+@attr.s
+class Scenario(object):
+    test_data = attr.ib()
+    event_type = attr.ib()
+    expected_body = attr.ib()
+    expected_reply_url = attr.ib()
+    expected_reaction_url = attr.ib()
+    def payload(self):
+        return get_sample_data(self.test_data)
+    def body(self):
+        return get_comment_body(self.event_type, self.payload())
+    def reply_url(self):
+        return reply_url(self.event_type, self.payload())
+    def reaction_url(self):
+        return reaction_url(self.event_type, self.payload())
+
+
+# FIXME: other comment types
+scenarios = [
+    Scenario(test_data="issue-created-webhook",
+             event_type="issues",
+             expected_body="This must be addressed immediately, if not before.",
+             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/5/comments",
+             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/5/reactions",
+             ),
+    Scenario(test_data="comment-existing-issue",
+             event_type="issue_comment",
+             expected_body="I agree with the original poster.",
+             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/5/comments",
+             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/comments/544211719/reactions",
+             ),
+    Scenario(test_data="comment-edited",
+             event_type="issue_comment",
+             expected_body="I agree with the original poster.\r\n\r\n[EDIT: on further thought, I disagree.]",
+             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/5/comments",
+             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/comments/544211719/reactions",
+             ),
+    Scenario(test_data="new-pr-created",
+             event_type="pull_request",
+             expected_body="",
+             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/comments",
+             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/reactions",
+             ),
+    Scenario(test_data="comment-existing-pr",
+             event_type="issue_comment",
+             expected_body="hello world :wave: ",
+             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/comments",
+             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/comments/544211921/reactions",
+             ),
+    Scenario(test_data="add-single-comment",
+             event_type="pull_request_review",
+             expected_body=None,
+             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/comments",
+             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/6/reviews/304238138/reactions",
+             ),
+    Scenario(test_data="pr-review-comment",
+             event_type="pull_request_review_comment",
+             expected_body="This is just a standalone comment.",
+             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/6/comments/336759908/replies",
+             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/comments/336759908/reactions",
+             ),
+    Scenario(test_data="full-pr-review",
+             event_type="pull_request_review",
+             expected_body="Truly a critical fix. However, maybe it needs more cowbell?",
+             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/comments",
+             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/6/reviews/304238151/reactions",
+             ),
+    Scenario(test_data="pr-review-comment-01",
+             event_type="pull_request_review_comment",
+             expected_body="This is part of a review.",
+             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/6/comments/336759921/replies",
+             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/comments/336759921/reactions",
+             ),
+    Scenario(test_data="pr-review",
+             event_type="pull_request_review",
+             expected_body="Truly a critical fix. However, maybe it needs more cowbell?",
+             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/comments",
+             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/6/reviews/304238151/reactions",
+             ),
+]
+
+
+@pytest.mark.parametrize("scenario", scenarios)
+def test_webhook_scenarios(scenario):
+    assert scenario.body() == scenario.expected_body
+    assert scenario.reply_url() == scenario.expected_reply_url
+    assert scenario.reaction_url() == scenario.expected_reaction_url
+
+
+async def test_github_app_command_routing(autojump_clock):
+    app = GithubApp(
+        user_agent=TEST_USER_AGENT,
+        app_id=TEST_APP_ID,
+        private_key=TEST_PRIVATE_KEY,
+        webhook_secret=TEST_WEBHOOK_SECRET,
+    )
+
+    record = []
+
+    @app.route_command("test-command")
+    async def test_command_handler(command, event_type, payload, gh_client):
+        assert gh_client.installation_id == TEST_INSTALLATION_ID
+        record.append((command, event_type, payload))
+
+    payload = get_sample_data("issue-created-webhook")
+    payload["issue"]["body"] = "/test-command hi"
+
+    await app.dispatch_webhook(
+        *fake_webhook("issues", payload, secret=TEST_WEBHOOK_SECRET)
+    )
+
+    assert record == [(["/test-command", "hi"], "issues", payload)]

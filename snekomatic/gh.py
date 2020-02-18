@@ -238,7 +238,25 @@ class GithubApp:
         self._installation_tokens = defaultdict(CachedInstallationToken)
         # event_type -> [Route(...), Route(...), ...]
         self._routes = defaultdict(list)
+        # command name -> handler
+        self._command_routes = {}
         self._cache = cachetools.LRUCache(cache_size)
+
+        # Not included currently:
+        # - edits/deletions
+        # - commit comments
+        # - "team discussion" comments
+        self.add(self._dispatch_command, "issues", action="opened")
+        self.add(self._dispatch_command, "pull_request", action="opened")
+        self.add(self._dispatch_command, "issue_comment", action="created")
+        self.add(
+            self._dispatch_command, "pull_request_review", action="submitted"
+        )
+        self.add(
+            self._dispatch_command,
+            "pull_request_review_comment",
+            action="created",
+        )
 
     user_agent = _lazy_env_fallback("user_agent")
     app_id = _lazy_env_fallback("app_id")
@@ -298,6 +316,19 @@ class GithubApp:
 
         return decorator
 
+    def add_command(self, async_fn, command_name):
+        if not command_name.startswith("/"):
+            command_name = "/" + command_name
+        assert command_name not in self._command_routes
+        self._command_routes[command_name] = async_fn
+
+    def route_command(self, command_name):
+        def decorator(async_fn):
+            self.add_command(async_fn, command_name)
+            return async_fn
+
+        return decorator
+
     async def dispatch_webhook(self, headers, body):
         event = Event.from_http(headers, body, secret=self.webhook_secret)
         print(
@@ -320,3 +351,77 @@ class GithubApp:
             pass
         else:
             print(f"Rate limit for install {installation_id}: {limit}")
+
+    async def _dispatch_command(self, event_type, payload, gh_client):
+        body = get_comment_body(event_type, payload)
+        # This can happen when someone does a NON-review comment on a PR diff.
+        # GH creates a "pull_request_review" object with null body, and also a
+        # "pull_request_review_comment" object with the actual body.
+        if body is None:
+            assert event_type == "pull_request_review"
+            return
+        for command in parse_commands(body):
+            if command[0] in self._command_routes:
+                # TODO: handle errors here
+                await self._command_routes[command[0]](
+                    command, event_type, payload, gh_client
+                )
+            else:
+                # TODO: handle unrecognized commands
+                raise NotImplementedError
+
+
+def get_comment_body(event_type, payload):
+    if event_type == "issues":
+        return glom(payload, "issue.body")
+    elif event_type == "pull_request":
+        return glom(payload, "pull_request.body")
+    elif event_type in ["issue_comment", "pull_request_review_comment"]:
+        return glom(payload, "comment.body")
+    elif event_type == "pull_request_review":
+        return glom(payload, "review.body")
+    else:
+        raise ValueError(f"unknown event_type: {event_type!r}")
+
+
+def reply_url(event_type, payload):
+    if event_type in ["issues", "issue_comment"]:
+        return glom(payload, "issue.comments_url")
+    elif event_type in ["pull_request", "pull_request_review"]:
+        return glom(payload, "pull_request.comments_url")
+    elif event_type in ["pull_request_review_comment"]:
+        base_url = glom(payload, "pull_request.review_comments_url")
+        try:
+            in_reply_to_id = glom(payload, "comment.in_reply_to_id")
+        except LookupError:
+            in_reply_to_id = glom(payload, "comment.id")
+        return f"{base_url}/{in_reply_to_id}/replies"
+    else:
+        raise ValueError(f"unknown event_type: {event_type!r}")
+
+
+def reaction_url(event_type, payload):
+    if event_type == "issues":
+        return glom(payload, "issue.url") + "/reactions"
+    elif event_type == "pull_request":
+        # XX TODO: check if this is correct (github doesn't document it)
+        return glom(payload, "pull_request.issue_url") + "/reactions"
+    elif event_type in ["issue_comment", "pull_request_review_comment"]:
+        return glom(payload, "comment.url") + "/reactions"
+    elif event_type == "pull_request_review":
+        # XX TODO: completely made this URL up, there are no docs, no idea if
+        # it's right (or even whether there is a right answer)
+        # UPDATE: yeah this is wrong
+        pr_url = glom(payload, "pull_request.url")
+        review_id = glom(payload, "review.id")
+        return f"{pr_url}/reviews/{review_id}/reactions"
+    else:
+        raise ValueError(f"unknown event_type: {event_type!r}")
+
+
+def parse_commands(body_text):
+    lines = body_text.splitlines()
+    for line in lines:
+        line = line.strip()
+        if line.startswith("/"):
+            yield line.split()

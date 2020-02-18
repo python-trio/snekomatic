@@ -214,7 +214,7 @@ like:
    assume if you're running Linux on your desktop you can figure out
    how to install docker on your distro)
 5. Open a new terminal, and run: ``docker run --rm -p 5432:5432
-   postgres:alpine``
+   -e POSTGRES_HOST_AUTH_METHOD=trust postgres:alpine``
 
    This will download and start a temporary Postgres daemon inside a
    container, configured the way we need it. When you're done running
