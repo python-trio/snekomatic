@@ -12,7 +12,7 @@ from pytest_trio.enable_trio_mode import *
 # Assumes that there's a password-less postgres running on localhost on the
 # default port. For example:
 #
-#   docker run --rm -p 5432:5432 postgres:alpine
+#   docker run --rm -p 5432:5432 -e POSTGRES_HOST_AUTH_METHOD=trust postgres:alpine
 
 BASE_DATABASE_URL = "postgresql://postgres@localhost"
 
