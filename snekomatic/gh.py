@@ -317,6 +317,8 @@ class GithubApp:
         return decorator
 
     def add_command(self, async_fn, command_name):
+        if not command_name.startswith("/"):
+            command_name = "/" + command_name
         assert command_name not in self._command_routes
         self._command_routes[command_name] = async_fn
 
@@ -420,9 +422,6 @@ def reaction_url(event_type, payload):
 def parse_commands(body_text):
     lines = body_text.splitlines()
     for line in lines:
-        words = line.split()
-        # TODO: don't hardcode bot name?
-        # TODO: accept /-commands?
-        # https://developer.github.com/v3/apps/#get-the-authenticated-github-app
-        if words and words[0] in ["@trio-bot", "trio-bot"]:
-            yield words[1:]
+        line = line.strip()
+        if line.startswith("/"):
+            yield line.split()

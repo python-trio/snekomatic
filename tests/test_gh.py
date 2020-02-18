@@ -385,11 +385,10 @@ async def test_github_app_command_routing(autojump_clock):
         record.append((command, event_type, payload))
 
     payload = get_sample_data("issue-created-webhook")
-    payload["issue"]["body"] = "@trio-bot test-command hi"
+    payload["issue"]["body"] = "/test-command hi"
 
     await app.dispatch_webhook(
         *fake_webhook("issues", payload, secret=TEST_WEBHOOK_SECRET)
     )
 
-    assert record == [(["test-command", "hi"], "issues", payload)]
-    # FIXME: other comment types
+    assert record == [(["/test-command", "hi"], "issues", payload)]
