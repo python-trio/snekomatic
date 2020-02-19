@@ -361,8 +361,10 @@ class GithubApp:
                     command, event_type, payload, gh_client
                 )
             else:
-                # TODO: handle unrecognized commands
-                raise NotImplementedError
+                # We silently ignore unrecognized commands, because lines
+                # starting with / can happen randomly, e.g. because of
+                # absolute paths in warnings/traceback output.
+                pass
 
 
 _COMMENT_BODY_FIELDS_BY_EVENT_TYPE = {

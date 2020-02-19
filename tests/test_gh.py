@@ -383,6 +383,11 @@ command_scenarios = [
         body="Looks good!\n/test-command\n\n\n  /test-command   hello  ",
         expected_commands=[["/test-command"], ["/test-command", "hello"]],
     ),
+    # unrecognized commands are silently ignored
+    CommandScenario(
+        body="/home/njs/hi\n /test-command ok\n/home/wgwz/code/trio",
+        expected_commands=[["/test-command", "ok"]],
+    ),
     CommandScenario(
         body=None,
         expected_commands=[],
