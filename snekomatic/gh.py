@@ -354,12 +354,6 @@ class GithubApp:
 
     async def _dispatch_command(self, event_type, payload, gh_client):
         body = get_comment_body(event_type, payload)
-        # This can happen when someone does a NON-review comment on a PR diff.
-        # GH creates a "pull_request_review" object with null body, and also a
-        # "pull_request_review_comment" object with the actual body.
-        if body is None:
-            assert event_type == "pull_request_review"
-            return
         for command in parse_commands(body):
             if command[0] in self._command_routes:
                 # TODO: handle errors here
@@ -371,17 +365,25 @@ class GithubApp:
                 raise NotImplementedError
 
 
+_COMMENT_BODY_FIELDS_BY_EVENT_TYPE = {
+    "issues": "issue.body",
+    "pull_request": "pull_request.body",
+    "issue_comment": "comment.body",
+    "pull_request_review": "review.body",
+    "pull_request_review_comment": "comment.body",
+}
+
 def get_comment_body(event_type, payload):
-    if event_type == "issues":
-        return glom(payload, "issue.body")
-    elif event_type == "pull_request":
-        return glom(payload, "pull_request.body")
-    elif event_type in ["issue_comment", "pull_request_review_comment"]:
-        return glom(payload, "comment.body")
-    elif event_type == "pull_request_review":
-        return glom(payload, "review.body")
-    else:
+    field = _COMMENT_BODY_FIELDS_BY_EVENT_TYPE.get(event_type)
+    if field is None:
         raise ValueError(f"unknown event_type: {event_type!r}")
+    # Some github objects can have empty bodies (like top-level issues/PRs, or
+    # a pull_request_review with no top-level comment). In that case github
+    # likes to set the body field to None. We normalize to the empty string.
+    body = glom(payload, field)
+    if body is None:
+        body = ""
+    return body
 
 
 def reply_url(event_type, payload):
