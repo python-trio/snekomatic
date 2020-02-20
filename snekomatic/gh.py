@@ -377,6 +377,7 @@ _COMMENT_BODY_FIELDS_BY_EVENT_TYPE = {
     "pull_request_review_comment": "comment.body",
 }
 
+
 def get_comment_body(event_type, payload):
     field = _COMMENT_BODY_FIELDS_BY_EVENT_TYPE.get(event_type)
     if field is None:
