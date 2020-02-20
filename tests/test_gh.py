@@ -287,78 +287,92 @@ class WebhookScenario(object):
     expected_body = attr.ib()
     expected_reply_url = attr.ib()
     expected_reaction_url = attr.ib()
+
     def payload(self):
         return get_sample_data(self.test_data)
+
     def body(self):
         return get_comment_body(self.event_type, self.payload())
+
     def reply_url(self):
         return reply_url(self.event_type, self.payload())
+
     def reaction_url(self):
         return reaction_url(self.event_type, self.payload())
 
 
 # FIXME: other comment types
 webhook_scenarios = [
-    WebhookScenario(test_data="issue-created-webhook",
-             event_type="issues",
-             expected_body="This must be addressed immediately, if not before.",
-             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/5/comments",
-             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/5/reactions",
-             ),
-    WebhookScenario(test_data="comment-existing-issue",
-             event_type="issue_comment",
-             expected_body="I agree with the original poster.",
-             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/5/comments",
-             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/comments/544211719/reactions",
-             ),
-    WebhookScenario(test_data="comment-edited",
-             event_type="issue_comment",
-             expected_body="I agree with the original poster.\r\n\r\n[EDIT: on further thought, I disagree.]",
-             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/5/comments",
-             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/comments/544211719/reactions",
-             ),
-    WebhookScenario(test_data="new-pr-created",
-             event_type="pull_request",
-             expected_body="",
-             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/comments",
-             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/reactions",
-             ),
-    WebhookScenario(test_data="comment-existing-pr",
-             event_type="issue_comment",
-             expected_body="hello world :wave: ",
-             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/comments",
-             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/comments/544211921/reactions",
-             ),
-    WebhookScenario(test_data="add-single-comment",
-             event_type="pull_request_review",
-             expected_body="",
-             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/comments",
-             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/6/reviews/304238138/reactions",
-             ),
-    WebhookScenario(test_data="pr-review-comment",
-             event_type="pull_request_review_comment",
-             expected_body="This is just a standalone comment.",
-             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/6/comments/336759908/replies",
-             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/comments/336759908/reactions",
-             ),
-    WebhookScenario(test_data="full-pr-review",
-             event_type="pull_request_review",
-             expected_body="Truly a critical fix. However, maybe it needs more cowbell?",
-             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/comments",
-             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/6/reviews/304238151/reactions",
-             ),
-    WebhookScenario(test_data="pr-review-comment-01",
-             event_type="pull_request_review_comment",
-             expected_body="This is part of a review.",
-             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/6/comments/336759921/replies",
-             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/comments/336759921/reactions",
-             ),
-    WebhookScenario(test_data="pr-review",
-             event_type="pull_request_review",
-             expected_body="Truly a critical fix. However, maybe it needs more cowbell?",
-             expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/comments",
-             expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/6/reviews/304238151/reactions",
-             ),
+    WebhookScenario(
+        test_data="issue-created-webhook",
+        event_type="issues",
+        expected_body="This must be addressed immediately, if not before.",
+        expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/5/comments",
+        expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/5/reactions",
+    ),
+    WebhookScenario(
+        test_data="comment-existing-issue",
+        event_type="issue_comment",
+        expected_body="I agree with the original poster.",
+        expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/5/comments",
+        expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/comments/544211719/reactions",
+    ),
+    WebhookScenario(
+        test_data="comment-edited",
+        event_type="issue_comment",
+        expected_body="I agree with the original poster.\r\n\r\n[EDIT: on further thought, I disagree.]",
+        expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/5/comments",
+        expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/comments/544211719/reactions",
+    ),
+    WebhookScenario(
+        test_data="new-pr-created",
+        event_type="pull_request",
+        expected_body="",
+        expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/comments",
+        expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/reactions",
+    ),
+    WebhookScenario(
+        test_data="comment-existing-pr",
+        event_type="issue_comment",
+        expected_body="hello world :wave: ",
+        expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/comments",
+        expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/comments/544211921/reactions",
+    ),
+    WebhookScenario(
+        test_data="add-single-comment",
+        event_type="pull_request_review",
+        expected_body="",
+        expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/comments",
+        expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/6/reviews/304238138/reactions",
+    ),
+    WebhookScenario(
+        test_data="pr-review-comment",
+        event_type="pull_request_review_comment",
+        expected_body="This is just a standalone comment.",
+        expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/6/comments/336759908/replies",
+        expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/comments/336759908/reactions",
+    ),
+    WebhookScenario(
+        test_data="full-pr-review",
+        event_type="pull_request_review",
+        expected_body="Truly a critical fix. However, maybe it needs more cowbell?",
+        expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/comments",
+        expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/6/reviews/304238151/reactions",
+    ),
+    WebhookScenario(
+        test_data="pr-review-comment-01",
+        event_type="pull_request_review_comment",
+        expected_body="This is part of a review.",
+        expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/6/comments/336759921/replies",
+        expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/comments/336759921/reactions",
+    ),
+    WebhookScenario(
+        test_data="pr-review",
+        event_type="pull_request_review",
+        expected_body="Truly a critical fix. However, maybe it needs more cowbell?",
+        expected_reply_url="https://api.github.com/repos/njsmith-test-org/test-repo/issues/6/comments",
+        expected_reaction_url="https://api.github.com/repos/njsmith-test-org/test-repo/pulls/6/reviews/304238151/reactions",
+    ),
 ]
 
 
@@ -374,20 +388,51 @@ class CommandScenario:
     body = attr.ib()
     expected_commands = attr.ib()
 
+
 command_scenarios = [
     CommandScenario(
-        body="/test-command hi",
-        expected_commands=[["/test-command", "hi"]],
+        body="/test-command hi", expected_commands=[["/test-command", "hi"]]
     ),
+    # Several commands with intermixed noise
     CommandScenario(
         body="Looks good!\n/test-command\n\n\n  /test-command   hello  ",
         expected_commands=[["/test-command"], ["/test-command", "hello"]],
     ),
+    # unrecognized commands are silently ignored
     CommandScenario(
-        body=None,
-        expected_commands=[],
+        body="/home/njs/hi\n /test-command ok\n/home/wgwz/code/trio",
+        expected_commands=[["/test-command", "ok"]],
+    ),
+    # We handle github's odd thing where body can be None instead of a string
+    CommandScenario(body=None, expected_commands=[]),
+    # Check markdown handling
+    CommandScenario(
+        body="""
+/test-command 1
+
+```
+/test-command code-block
+```
+
+- /test-command in-list
+  /test-command also-in-list
+
+/test-command *with-markup*
+
+<!--
+
+/test-command in-comment
+
+-->
+
+/test-command 2
+/test-command 3
+/test-command 4
+        """,
+        expected_commands=[["/test-command", str(i)] for i in [1, 2, 3, 4]],
     ),
 ]
+
 
 @pytest.mark.parametrize("scenario", command_scenarios)
 async def test_github_app_command_routing(autojump_clock, scenario):

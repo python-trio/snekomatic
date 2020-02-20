@@ -68,6 +68,8 @@ import gidgethub.abc
 from glom import glom
 import jwt
 import pendulum
+import marko
+from marko.ext.gfm import gfm
 
 __all__ = ["GithubApp"]
 
@@ -361,8 +363,10 @@ class GithubApp:
                     command, event_type, payload, gh_client
                 )
             else:
-                # TODO: handle unrecognized commands
-                raise NotImplementedError
+                # We silently ignore unrecognized commands, because lines
+                # starting with / can happen randomly, e.g. because of
+                # absolute paths in warnings/traceback output.
+                pass
 
 
 _COMMENT_BODY_FIELDS_BY_EVENT_TYPE = {
@@ -372,6 +376,7 @@ _COMMENT_BODY_FIELDS_BY_EVENT_TYPE = {
     "pull_request_review": "review.body",
     "pull_request_review_comment": "comment.body",
 }
+
 
 def get_comment_body(event_type, payload):
     field = _COMMENT_BODY_FIELDS_BY_EVENT_TYPE.get(event_type)
@@ -421,9 +426,41 @@ def reaction_url(event_type, payload):
         raise ValueError(f"unknown event_type: {event_type!r}")
 
 
+# We use marko to parse the body as markdown, and then when scanning for
+# commands we only look at top-level paragraphs, plain text, rendered as
+# standalone lines.
+#
+# For a quick overview of how marko's AST represents some markdown, run:
+#   marko.ast_renderer.ASTRenderer().render(gfm.parse("..."))
 def parse_commands(body_text):
-    lines = body_text.splitlines()
-    for line in lines:
-        line = line.strip()
-        if line.startswith("/"):
-            yield line.split()
+    ast = gfm.parse(body_text)
+    for para in ast.children:
+        # This makes us ignore commands inside blockquotes, lists, code
+        # blocks, etc.
+        if not isinstance(para, marko.block.Paragraph):
+            continue
+
+        # Within a paragraph, we want to find RawText chunks that cover an
+        # entire line. So they should start/end with the edge of the paragraph
+        # *or* a LineBreak. In commonmark, there's a distinction between
+        # "soft" and "hard" line breaks, but in practice github seems to
+        # render both of them as hard line breaks, so we don't bother
+        # distinguishing.
+        def is_line_boundary(i):
+            if i < 0:
+                return True
+            if i >= len(para.children):
+                return True
+            if isinstance(para.children[i], marko.inline.LineBreak):
+                return True
+            return False
+
+        for i, child in enumerate(para.children):
+            if (
+                is_line_boundary(i - 1)
+                and is_line_boundary(i + 1)
+                and isinstance(child, marko.inline.RawText)
+            ):
+                line = child.children.strip()
+                if line.startswith("/"):
+                    yield line.split()
