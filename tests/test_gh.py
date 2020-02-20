@@ -406,7 +406,13 @@ command_scenarios = [
 - /test-command in-list
   /test-command also-in-list
 
-/test-command *emphasized*
+/test-command *with-markup*
+
+<!--
+
+/test-command in-comment
+
+-->
 
 /test-command 2
 /test-command 3

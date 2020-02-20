@@ -27,8 +27,8 @@ hyperframe==5.2.0         # via h2
 idna==2.9                 # via trio
 itsdangerous==1.1.0       # via quart
 jinja2==2.11.1            # via quart
+marko==0.7.1
 markupsafe==1.1.1         # via jinja2
-mistletoe==0.7.2
 outcome==1.0.1            # via trio
 pendulum==2.0.5
 priority==1.3.0           # via hypercorn
