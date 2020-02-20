@@ -379,6 +379,7 @@ command_scenarios = [
         body="/test-command hi",
         expected_commands=[["/test-command", "hi"]],
     ),
+    # Several commands with intermixed noise
     CommandScenario(
         body="Looks good!\n/test-command\n\n\n  /test-command   hello  ",
         expected_commands=[["/test-command"], ["/test-command", "hello"]],
@@ -388,9 +389,30 @@ command_scenarios = [
         body="/home/njs/hi\n /test-command ok\n/home/wgwz/code/trio",
         expected_commands=[["/test-command", "ok"]],
     ),
+    # We handle github's odd thing where body can be None instead of a string
     CommandScenario(
         body=None,
         expected_commands=[],
+    ),
+    # Check markdown handling
+    CommandScenario(
+        body="""
+/test-command 1
+
+```
+/test-command code-block
+```
+
+- /test-command in-list
+  /test-command also-in-list
+
+/test-command *emphasized*
+
+/test-command 2
+/test-command 3
+/test-command 4
+        """,
+        expected_commands=[["/test-command", str(i)] for i in [1, 2, 3, 4]]
     ),
 ]
 

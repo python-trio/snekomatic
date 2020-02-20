@@ -68,6 +68,7 @@ import gidgethub.abc
 from glom import glom
 import jwt
 import pendulum
+import mistletoe
 
 __all__ = ["GithubApp"]
 
@@ -423,9 +424,42 @@ def reaction_url(event_type, payload):
         raise ValueError(f"unknown event_type: {event_type!r}")
 
 
+# We use mistletoe to parse the body as markdown, and then when scanning for
+# commands we only look at top-level paragraphs, plain text, rendered as
+# standalone lines.
+#
+# For a quick idea of how mistletoe's AST represents some markdown, run:
+#
+#   mistletoe --renderer mistletoe.ast_renderer.ASTRenderer
+#
+# and then type some markdown and hit control-D.
 def parse_commands(body_text):
-    lines = body_text.splitlines()
-    for line in lines:
-        line = line.strip()
-        if line.startswith("/"):
-            yield line.split()
+    body = mistletoe.Document(body_text)
+    for para in body.children:
+        print(para)
+        # This makes us ignore commands inside blockquotes, lists, code
+        # blocks, etc.
+        if not isinstance(para, mistletoe.block_token.Paragraph):
+            continue
+
+        # Within a paragraph, we want to find RawText chunks that cover an
+        # entire line. So they should start/end with the edge of the paragraph
+        # *or* a LineBreak. In commonmark, there's a distinction between
+        # "soft" and "hard" line breaks, but in comments github seems to
+        # render both of them as hard line breaks, so we don't bother
+        # distinguishing.
+        def is_line_boundary(i):
+            if i < 0:
+                return True
+            if i >= len(para.children):
+                return True
+            if isinstance(para.children[i], mistletoe.span_token.LineBreak):
+                return True
+            return False
+
+        for i, token in enumerate(para.children):
+            if (is_line_boundary(i - 1) and is_line_boundary(i + 1) and
+                isinstance(token, mistletoe.span_token.RawText)):
+                line = token.content.strip()
+                if line.startswith("/"):
+                    yield line.split()
