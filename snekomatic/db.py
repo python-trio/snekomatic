@@ -1,7 +1,7 @@
 import os
 from sqlalchemy import create_engine, MetaData, Table, Column, String
 from sqlalchemy.sql.expression import select, exists
-import psycopg2
+import attr
 
 metadata = MetaData()
 
@@ -9,21 +9,28 @@ sent_invitation = Table(
     "sent_invitation", metadata, Column("entry", String, primary_key=True)
 )
 
+@attr.s
+class CachedEngine:
+    engine = attr.ib()
+    database_url = attr.ib()
+
+CACHED_ENGINE = CachedEngine(None, None)
 
 def get_conn():
-    # XX TODO: maybe cache the engine and recreate it iff DATABASE_URL
-    # changes? (and run alembic automatically at that point)
-    engine = create_engine(os.environ["DATABASE_URL"])
-    metadata.create_all(engine)
-    return engine.connect()
+    global CACHED_ENGINE
+    if CACHED_ENGINE.database_url != os.environ["DATABASE_URL"]:
+        engine = create_engine(os.environ["DATABASE_URL"])
+        CACHED_ENGINE = CachedEngine(engine, os.environ["DATABASE_URL"])
+        metadata.create_all(engine)
+    return CACHED_ENGINE.engine.connect()
 
 
 class SentInvitation:
     @staticmethod
     def contains(name):
         with get_conn() as conn:
-            # This is basically:
-            #   SELECT EXISTS (SELECT 1 FROM sent_invitation WHERE entry = <name>)
+            # This is:
+            #   SELECT EXISTS (SELECT 1 FROM sent_invitation WHERE entry = ?)
             return conn.execute(
                 select(
                     [exists(select([1]).where(sent_invitation.c.entry == name))]
