@@ -1,44 +1,36 @@
 import os
+from sqlalchemy import create_engine, MetaData, Table, Column, String
+from sqlalchemy.sql.expression import select, exists
 import psycopg2
 
+metadata = MetaData()
 
-class PersistentStringSet:
-    def __init__(self, name):
-        self._table_name = f"persistent_set_{name}"
+sent_invitation = Table(
+    "sent_invitation", metadata, Column("entry", String, primary_key=True)
+)
 
-    def _conn(self):
-        conn = psycopg2.connect(os.environ["DATABASE_URL"])
-        cursor = conn.cursor()
-        cursor.execute(
-            f"""
-            CREATE TABLE IF NOT EXISTS {self._table_name} (
-                entry  text PRIMARY KEY
-            );
-            """
-        )
-        conn.commit()
-        return conn
 
-    def __contains__(self, value):
-        with self._conn() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                f"""
-                SELECT exists
-                   (SELECT 1 FROM {self._table_name} WHERE entry = %s);
-                """,
-                (value,),
-            )
-            (exists,) = cursor.fetchone()
-            return exists
+def get_conn():
+    # XX TODO: maybe cache the engine and recreate it iff DATABASE_URL
+    # changes? (and run alembic automatically at that point)
+    engine = create_engine(os.environ["DATABASE_URL"])
+    metadata.create_all(engine)
+    return engine.connect()
 
-    def add(self, value):
-        with self._conn() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                f"""
-                INSERT INTO {self._table_name} (entry) VALUES (%s);
-                """,
-                (value,),
-            )
-            conn.commit()
+
+class SentInvitation:
+    @staticmethod
+    def contains(name):
+        with get_conn() as conn:
+            # This is basically:
+            #   SELECT EXISTS (SELECT 1 FROM sent_invitation WHERE entry = <name>)
+            return conn.execute(
+                select(
+                    [exists(select([1]).where(sent_invitation.c.entry == name))]
+                )
+            ).scalar()
+
+    @staticmethod
+    def add(name):
+        with get_conn() as conn:
+            conn.execute(sent_invitation.insert(), entry=name)

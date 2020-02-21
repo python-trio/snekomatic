@@ -6,7 +6,8 @@ import attr
 import urllib.parse
 import json
 
-from snekomatic.app import main, SENT_INVITATION
+from snekomatic.app import main
+from snekomatic.db import SentInvitation
 from snekomatic.gh import GithubApp, BaseGithubClient
 from .util import fake_webhook, save_environ
 from .credentials import *
@@ -111,7 +112,7 @@ async def test_invite_scenarios(s, our_app_url, monkeypatch):
 
     # Set up database
     if s.in_db:
-        SENT_INVITATION.add(PR_CREATOR)
+        SentInvitation.add(PR_CREATOR)
 
     # Faking the Github API
     async def fake_token_for(self, installation_id):
@@ -156,4 +157,4 @@ async def test_invite_scenarios(s, our_app_url, monkeypatch):
     # Checks
     assert did_invite == did_comment
     assert did_invite == s.expect_invite
-    assert (PR_CREATOR in SENT_INVITATION) == s.expect_in_db_after
+    assert (SentInvitation.contains(PR_CREATOR)) == s.expect_in_db_after
