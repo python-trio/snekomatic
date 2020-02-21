@@ -24,4 +24,4 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_table("sent_invitation")
+    op.drop_table("persistent_set_sent_invitation")
