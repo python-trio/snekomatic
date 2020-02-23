@@ -1,21 +1,25 @@
-from snekomatic.db import PersistentStringSet
+import os
+import psycopg2
+import pytest
+from snekomatic.db import SentInvitation
 
 
-def test_persistent_string_set(heroku_style_pg):
-    s1 = PersistentStringSet("s1")
-    s2 = PersistentStringSet("s2")
+def test_SentInvitation(heroku_style_pg):
+    assert not SentInvitation.contains("foo")
+    assert not SentInvitation.contains("bar")
+    SentInvitation.add("foo")
+    assert SentInvitation.contains("foo")
+    assert not SentInvitation.contains("bar")
 
-    assert "foo" not in s1
-    assert "foo" not in s2
 
-    assert "bar" not in s1
-    assert "bar" not in s2
+def test_consistency_check(heroku_style_pg):
+    with psycopg2.connect(os.environ["DATABASE_URL"]) as conn:
+        conn.autocommit = True
+        with conn.cursor() as cur:
+            cur.execute("CREATE TABLE unexpected_table_asdofhsdf (hi integer);")
 
-    s1.add("foo")
-    s2.add("bar")
-
-    assert "foo" in s1
-    assert "foo" not in s2
-
-    assert "bar" in s2
-    assert "bar" not in s1
+    # Now any attempt to access the database should raise an exception
+    with pytest.raises(RuntimeError):
+        SentInvitation.contains("foo")
+    with pytest.raises(RuntimeError):
+        SentInvitation.add("foo")

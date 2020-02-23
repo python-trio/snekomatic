@@ -10,7 +10,7 @@ from quart_trio import QuartTrio
 import gidgethub
 from gidgethub.sansio import accept_format
 
-from .db import PersistentStringSet
+from .db import SentInvitation
 from .gh import GithubApp, reply_url, reaction_url
 
 # we should stash the delivery id in a contextvar and include it in logging
@@ -66,9 +66,6 @@ async def webhook_github():
     body = await request.get_data()
     await github_app.dispatch_webhook(request.headers, body)
     return ""
-
-
-SENT_INVITATION = PersistentStringSet("SENT_INVITATION")
 
 
 # dedent, remove single newlines (but not double-newlines), remove
@@ -156,7 +153,7 @@ async def pull_request_merged(event_type, payload, gh_client):
     org = glom(payload, "organization.login")
     print(f"PR by {creator} was merged!")
 
-    if creator in SENT_INVITATION:
+    if SentInvitation.contains(creator):
         print("The database says we already sent an invitation")
         return
 
@@ -164,7 +161,7 @@ async def pull_request_merged(event_type, payload, gh_client):
     if state is not None:
         # Remember for later so we don't keep checking the Github API over and
         # over.
-        SENT_INVITATION.add(creator)
+        SentInvitation.add(creator)
         print(f"They already have member state {state}; not inviting")
         return
 
@@ -176,7 +173,7 @@ async def pull_request_merged(event_type, payload, gh_client):
         data={"role": "member"},
     )
     # Record that we did
-    SENT_INVITATION.add(creator)
+    SentInvitation.add(creator)
     # Welcome them
     await gh_client.post(
         glom(payload, "pull_request.comments_url"),
