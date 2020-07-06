@@ -38,6 +38,7 @@ class InviteScenario:
     member_state = attr.ib()
     expect_in_db_after = attr.ib()
     expect_invite = attr.ib()
+    user_type = attr.ib(default="User")
 
 
 INVITE_SCENARIOS = [
@@ -76,6 +77,14 @@ INVITE_SCENARIOS = [
         expect_in_db_after=True,
         expect_invite=True,
     ),
+    InviteScenario(
+        pr_merged=True,
+        in_db=False,
+        member_state=None,
+        expect_in_db_after=False,
+        expect_invite=False,
+        user_type="Bot",
+    ),
 ]
 
 
@@ -101,7 +110,7 @@ async def test_invite_scenarios(s, our_app_url, monkeypatch):
             "action": "closed",
             "pull_request": {
                 "merged": s.pr_merged,
-                "user": {"login": PR_CREATOR},
+                "user": {"login": PR_CREATOR, "type": s.user_type},
                 "comments_url": "fake-comments-url",
             },
             "organization": {"login": ORG},

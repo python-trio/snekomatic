@@ -149,6 +149,9 @@ async def pull_request_merged(event_type, payload, gh_client):
     if not glom(payload, "pull_request.merged"):
         print("but not merged, so never mind")
         return
+    if glom(payload, "pull_request.user.type", default="").lower() == "bot":
+        print("This user is a bot -> not inviting")
+        return
     creator = glom(payload, "pull_request.user.login")
     org = glom(payload, "organization.login")
     print(f"PR by {creator} was merged!")
